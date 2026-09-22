@@ -48,3 +48,9 @@ Différence des index entre minuit et minuit à Paris, en litres, sur 30 jours. 
 La vue globale relie le réseau et la production solaire à la maison ; l’injection solaire constitue une branche distincte. L’écart positif entre consommation maison et appareils suivis apparaît comme « Consommation non suivie ». Il peut inclure des appareils non équipés et des relevés manquants ; ce n’est pas une mesure indépendante.
 
 Si les appareils dépassent le total maison ou si le bilan global est incomplet, le diagramme revient aux seuls appareils suivis avec une explication. Lorsqu’une pièce est filtrée, les sources sont masquées : leur part réelle par pièce n’est pas mesurée. Les dégradés identifient les origines et destinations des liens ; les couleurs des appareils restent stables à travers les rafraîchissements.
+
+### Eau et gaz : heures de la journée
+
+Les vues Eau et Gaz présentent des barres par heure pour la journée sélectionnée (30 jours disponibles). L’eau propose les quatre compteurs séparément : le général et les sous-compteurs ne sont pas additionnés. Le gaz est exprimé en kWh, l’eau en litres. Les incréments sont répartis entre les relevés espacés de cinq minutes. Une remise à zéro ou un intervalle de plus de dix minutes laisse la tranche inconnue ; les heures futures restent vides. L’heure en cours est partielle. Les journées de changement d’heure comportent 23 ou 25 tranches ; les infobulles indiquent le décalage horaire.
+
+La comparaison avec la veille est une courbe pointillée, alignée sur les heures locales. Elle peut être masquée. Le total connu et l’heure de pointe accompagnent le graphique ; une journée sans consommation n’affiche pas de fausse heure de pointe.

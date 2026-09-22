@@ -830,6 +830,7 @@ async function loadGas(){
  const end=nowISO(),start=dayISO(shiftDay(localDate(),-29));
  const values=await vmR('sensor.gaz_en_kwh_value{db="home_assistant"}',start,end,300);
  const days=dailyDeltas(values,1),keys=Object.keys(days).sort();
+ await loadGasHours();
  document.getElementById('gas-today').innerHTML=numberHTML(days[localDate()]??null,'kWh',1);
  const segments=values.intervals||[],last=segments.at(-1);
  const recent=last&&Date.now()/1000-last.end<=600&&last.end-last.start<=600;
@@ -907,13 +908,16 @@ async function loadWater(){
  try{
   const today=localDate(),first=shiftDay(today,-29),end=nowISO();
   if(waterSelected===waterToday)waterSelected=today;waterToday=today;
-  const result=await Promise.allSettled(WATER_METERS.map(m=>readWaterMeter(m,first,end)));
+  const result=await Promise.allSettled(WATER_METERS.map(m=>readWaterMeter(m,shiftDay(first,-1),end)));
+  waterHourEnd=Date.parse(end)/1000;
+  WATER_METERS.forEach((m,i)=>{waterHourPoints[m.id]=result[i].status==='fulfilled'?result[i].value:[];});
   WATER_METERS.forEach((m,i)=>{waterDaily[m.id]=result[i].status==='fulfilled'?waterDailyUse(result[i].value,first,today,Date.parse(end)/1000):{};});
   const picker=document.getElementById('water-day');picker.min=first;picker.max=today;picker.value=waterSelected;
   renderWater();lastWater=Date.now();
  }finally{waterPending=false;document.getElementById('water-loading').hidden=true;}
 }
 function renderWaterCards(){
+ renderWaterHours();
  const today=localDate();
  const dayName=new Date(waterSelected+'T12:00:00Z').toLocaleDateString('fr-FR',{timeZone:HOME_TZ,weekday:'long',day:'numeric',month:'long'});
  document.getElementById('water-day-caption').textContent=dayName+(waterSelected===today?' · journée en cours':' · journée complète');
@@ -1112,14 +1116,14 @@ function dailySourceModel(rows,t){
  return {rows:result,untracked,measured,totals:t};
 }
 function renderDailySourceFlow(model){
- const t=model.totals,layout=powerLayout(model.rows,t.solar+t.imported),{groups,scale,height,rootY,rootHeight}=layout;
+ const t=model.totals,layout=powerLayout(model.rows,t.solar+t.imported),{groups,scale,height,rootHeight}=layout,rootY=80;
  if(!scale)return '<p class="vt-sub">Aucune consommation à répartir.</p>';
  const palette=energyPalette(),areas=[...new Set(POWER_SOURCES.map(d=>d.area))].sort();let defs='',links='',nodes='',seq=0;
  const label=(x,y,name,value,anchor='start')=>'<text class="flow-label" x="'+x+'" y="'+y+'" text-anchor="'+anchor+'">'+escapeHTML(name)+'</text><text class="flow-value" x="'+x+'" y="'+(y+19)+'" text-anchor="'+anchor+'">'+fmt(value,3)+' kWh</text>';
  const rect=(x,y,h,color)=>h>0?'<rect x="'+x+'" y="'+y+'" width="12" height="'+h+'" fill="'+color+'"/>':'';
  const ribbon=(x1,y1,x2,y2,h,from,to,title)=>{if(h<=0)return '';const id='daily-source-gradient-'+seq++;defs+='<linearGradient id="'+id+'"><stop stop-color="'+from+'"/><stop offset="1" stop-color="'+to+'"/></linearGradient>';return '<path class="flow-link" tabindex="0" aria-label="'+escapeHTML(title)+'" fill="url(#'+id+')" d="M'+x1+','+y1+' C'+((x1+x2)/2)+','+y1+' '+((x1+x2)/2)+','+y2+' '+x2+','+y2+' L'+x2+','+(y2+h)+' C'+((x1+x2)/2)+','+(y2+h)+' '+((x1+x2)/2)+','+(y1+h)+' '+x1+','+(y1+h)+' Z"><title>'+escapeHTML(title)+'</title></path>';};
  const houseX=325,areaX=670,deviceX=995,gridHeight=t.imported*scale,solarHeight=t.solar*scale,injHeight=t.inj*scale;
- const sourceTop=Math.max(55,(height-gridHeight-solarHeight-65)/2),gridY=sourceTop,solarY=gridY+gridHeight+65;
+ const sourceTop=80,gridY=sourceTop,solarY=gridY+gridHeight+65;
  const exportY=Math.max(rootY+rootHeight+55,solarY+t.self*scale),fullHeight=Math.max(height,exportY+injHeight+65);
  links+=ribbon(45,gridY,houseX,rootY,gridHeight,C.hc,C.hc,'Réseau → maison : '+fmt(t.imported,3)+' kWh');
  links+=ribbon(45,solarY,houseX,rootY+gridHeight,t.self*scale,C.sol,C.hc,'Solaire → maison : '+fmt(t.self,3)+' kWh');
@@ -1174,6 +1178,51 @@ for(const view of ['today','day']){
  document.querySelectorAll('[data-bar-view="'+view+'"]').forEach(b=>b.addEventListener('click',()=>{dayBarsState[view].step=+b.dataset.barStep;view==='today'?loadToday():loadDay();}));
  document.getElementById(view+'-bar-compare').addEventListener('change',e=>{const c=charts['chart-'+view];if(c){c.setDatasetVisibility(c.data.datasets.length-1,e.target.checked);c.update();}});
 }
+
+// Attribute counter increments to their observation interval. Gaps and resets stay unknown.
+function resourceHourBuckets(intervals,day,end){
+ const start=localMidnight(day)/1000,next=localMidnight(shiftDay(day,1))/1000;
+ return Array.from({length:Math.round((next-start)/3600)},(_,i)=>{
+  const a=start+i*3600,b=Math.min(a+3600,end);if(b<=a)return null;
+  let value=0,covered=0;
+  for(const s of intervals){const duration=s.end-s.start,overlap=Math.max(0,Math.min(b,s.end)-Math.max(a,s.start));
+   if(overlap&&duration>0&&duration<=600&&Number.isFinite(s.delta)&&s.delta>=0){value+=s.delta*overlap/duration;covered+=overlap;}
+  }
+  return covered>=b-a-1?value:null;
+ });
+}
+function resourceIntervals(points){return points.slice(1).map(([t,v],i)=>({start:+points[i][0],end:+t,delta:+v-Number(points[i][1])}));}
+function renderResourceHours(kind,day,values,label,unit,color,previous=[]){
+ const start=localMidnight(day),labels=values.map((_,i)=>new Date(start+i*3600000).toLocaleTimeString('fr-FR',{timeZone:HOME_TZ,hour:'2-digit',minute:'2-digit',timeZoneName:'shortOffset'}));
+ const prevDay=shiftDay(day,-1),prevStart=localMidnight(prevDay),clock=t=>new Date(t).toLocaleTimeString('fr-FR',{timeZone:HOME_TZ,hour:'2-digit',minute:'2-digit'}),byClock=new Map(previous.map((v,i)=>[clock(prevStart+i*3600000),v]));
+ const id='chart-'+kind+'-hours';charts[id]?.destroy();
+ charts[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels,datasets:[{label,data:values,backgroundColor:color+'dc',borderColor:color,borderWidth:0,borderRadius:4,maxBarThickness:34,barPercentage:.94,categoryPercentage:.84},{type:'line',label:label+' · veille',data:values.map((_,i)=>byClock.get(clock(start+i*3600000))??null),borderColor:TC,borderDash:[5,4],borderWidth:1.5,pointRadius:0,spanGaps:false,hidden:!document.getElementById(kind+'-hours-compare').checked}]},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{color:TC,usePointStyle:true,boxWidth:8,padding:18}},tooltip:{callbacks:{title:items=>labels[items[0].dataIndex]+' · tranche d’une heure',label:c=>c.dataset.label+' : '+fmt(c.parsed.y,2)+' '+unit}}},scales:{x:{grid:{display:false},ticks:{color:TC,maxRotation:0,maxTicksLimit:12,callback:(v,i)=>labels[i].split(' ')[0]}},y:{beginAtZero:true,title:{display:true,text:unit,color:TC},grid:{color:GC},ticks:{color:TC}}}}});
+ document.getElementById(kind+'-hours-caption').textContent=new Date(day+'T12:00:00Z').toLocaleDateString('fr-FR',{timeZone:HOME_TZ,dateStyle:'long'})+' · '+label+' · '+unit+' par heure';
+ const elapsed=Math.max(0,Math.min(values.length,Math.ceil((Date.now()-start)/3600000))),missing=values.slice(0,elapsed).filter(v=>v===null).length;
+ const known=values.slice(0,elapsed).filter(v=>v!==null),peak=known.length?Math.max(...known):null,peakIndex=peak===null||peak===0?-1:values.indexOf(peak);
+ document.getElementById(kind+'-hours-summary').textContent='Total '+(missing?'connu ':'')+': '+fmt(known.length?known.reduce((a,b)=>a+b,0):null,2)+' '+unit+' · Heure de pointe : '+(peakIndex>=0?labels[peakIndex].split(' ')[0]+' ('+fmt(peak,2)+' '+unit+')':'—');
+ document.getElementById(kind+'-hours-note').textContent=(day===localDate()?'Heure en cours partielle. ':'')+'Répartition entre les relevés, à 5 minutes près.'+(missing?' '+missing+' tranche(s) sans relevés suffisants : aucune consommation n’est inventée.':'');
+}
+let waterHourPoints={},waterHourEnd=0,gasHourDay=localDate(),gasHourToday=localDate(),gasHourRevision=0;
+function renderWaterHours(){
+ const meter=WATER_METERS.find(m=>String(m.id)===document.getElementById('water-hour-meter').value)||WATER_METERS[0];
+ renderResourceHours('water',waterSelected,resourceHourBuckets(resourceIntervals(waterHourPoints[meter.id]||[]),waterSelected,waterHourEnd),meter.name,'L',meter.color,resourceHourBuckets(resourceIntervals(waterHourPoints[meter.id]||[]),shiftDay(waterSelected,-1),waterHourEnd));
+}
+async function loadGasHours(){
+ const today=localDate();if(gasHourDay===gasHourToday)gasHourDay=today;gasHourToday=today;
+ const picker=document.getElementById('gas-day');picker.max=today;picker.min=shiftDay(today,-29);picker.value=gasHourDay;
+ const day=gasHourDay,revision=++gasHourRevision,end=Math.min(Date.now()/1000,localMidnight(shiftDay(day,1))/1000);
+ document.getElementById('gas-hours-caption').textContent='Chargement des relevés…';
+ try{
+ const points=await vmR('last_over_time(sensor.gaz_en_kwh_value{db="home_assistant"}[30d])',dayISO(shiftDay(day,-1)),new Date(end*1000).toISOString(),300);
+ if(revision!==gasHourRevision)return;
+ renderResourceHours('gas',day,resourceHourBuckets(points.intervals||[],day,end),'Gaz','kWh',C.gas,resourceHourBuckets(points.intervals||[],shiftDay(day,-1),end));
+ }catch(e){if(revision===gasHourRevision){charts['chart-gas-hours']?.destroy();delete charts['chart-gas-hours'];document.getElementById('gas-hours-caption').textContent='Relevés indisponibles pour cette journée.';}throw e;}
+}
+document.getElementById('water-hour-meter').addEventListener('change',renderWaterHours);
+document.getElementById('gas-day').addEventListener('change',e=>{if(e.target.value>=e.target.min&&e.target.value<=e.target.max){gasHourDay=e.target.value;loadGasHours().catch(()=>reportRequest('gaz-horaires',true));}});
+
+for(const kind of ['water','gas'])document.getElementById(kind+'-hours-compare').addEventListener('change',e=>{const chart=charts['chart-'+kind+'-hours'];if(chart){chart.setDatasetVisibility(1,e.target.checked);chart.update();}});
 
 let energySourceConfig=[{id:'westic1hp',kind:'import',name:'Heures pleines',price:0.1727},{id:'westic1hc',kind:'import',name:'Heures creuses',price:0.1376},{id:'westic1inj',kind:'export',name:'Injection',price:0.1},{id:'energy_production_today_filtre',kind:'solar',name:'Solaire',price:null}],tariffHistory=[],configVersion='',configPending=false;
 function updateAreaOptions(){

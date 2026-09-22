@@ -58,6 +58,7 @@ async function loadGas(){
  const end=nowISO(),start=dayISO(shiftDay(localDate(),-29));
  const values=await vmR('sensor.gaz_en_kwh_value{db="home_assistant"}',start,end,300);
  const days=dailyDeltas(values,1),keys=Object.keys(days).sort();
+ await loadGasHours();
  document.getElementById('gas-today').innerHTML=numberHTML(days[localDate()]??null,'kWh',1);
  const segments=values.intervals||[],last=segments.at(-1);
  const recent=last&&Date.now()/1000-last.end<=600&&last.end-last.start<=600;
@@ -135,13 +136,16 @@ async function loadWater(){
  try{
   const today=localDate(),first=shiftDay(today,-29),end=nowISO();
   if(waterSelected===waterToday)waterSelected=today;waterToday=today;
-  const result=await Promise.allSettled(WATER_METERS.map(m=>readWaterMeter(m,first,end)));
+  const result=await Promise.allSettled(WATER_METERS.map(m=>readWaterMeter(m,shiftDay(first,-1),end)));
+  waterHourEnd=Date.parse(end)/1000;
+  WATER_METERS.forEach((m,i)=>{waterHourPoints[m.id]=result[i].status==='fulfilled'?result[i].value:[];});
   WATER_METERS.forEach((m,i)=>{waterDaily[m.id]=result[i].status==='fulfilled'?waterDailyUse(result[i].value,first,today,Date.parse(end)/1000):{};});
   const picker=document.getElementById('water-day');picker.min=first;picker.max=today;picker.value=waterSelected;
   renderWater();lastWater=Date.now();
  }finally{waterPending=false;document.getElementById('water-loading').hidden=true;}
 }
 function renderWaterCards(){
+ renderWaterHours();
  const today=localDate();
  const dayName=new Date(waterSelected+'T12:00:00Z').toLocaleDateString('fr-FR',{timeZone:HOME_TZ,weekday:'long',day:'numeric',month:'long'});
  document.getElementById('water-day-caption').textContent=dayName+(waterSelected===today?' · journée en cours':' · journée complète');

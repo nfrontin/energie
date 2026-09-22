@@ -8,14 +8,14 @@ function dailySourceModel(rows,t){
  return {rows:result,untracked,measured,totals:t};
 }
 function renderDailySourceFlow(model){
- const t=model.totals,layout=powerLayout(model.rows,t.solar+t.imported),{groups,scale,height,rootY,rootHeight}=layout;
+ const t=model.totals,layout=powerLayout(model.rows,t.solar+t.imported),{groups,scale,height,rootHeight}=layout,rootY=80;
  if(!scale)return '<p class="vt-sub">Aucune consommation à répartir.</p>';
  const palette=energyPalette(),areas=[...new Set(POWER_SOURCES.map(d=>d.area))].sort();let defs='',links='',nodes='',seq=0;
  const label=(x,y,name,value,anchor='start')=>'<text class="flow-label" x="'+x+'" y="'+y+'" text-anchor="'+anchor+'">'+escapeHTML(name)+'</text><text class="flow-value" x="'+x+'" y="'+(y+19)+'" text-anchor="'+anchor+'">'+fmt(value,3)+' kWh</text>';
  const rect=(x,y,h,color)=>h>0?'<rect x="'+x+'" y="'+y+'" width="12" height="'+h+'" fill="'+color+'"/>':'';
  const ribbon=(x1,y1,x2,y2,h,from,to,title)=>{if(h<=0)return '';const id='daily-source-gradient-'+seq++;defs+='<linearGradient id="'+id+'"><stop stop-color="'+from+'"/><stop offset="1" stop-color="'+to+'"/></linearGradient>';return '<path class="flow-link" tabindex="0" aria-label="'+escapeHTML(title)+'" fill="url(#'+id+')" d="M'+x1+','+y1+' C'+((x1+x2)/2)+','+y1+' '+((x1+x2)/2)+','+y2+' '+x2+','+y2+' L'+x2+','+(y2+h)+' C'+((x1+x2)/2)+','+(y2+h)+' '+((x1+x2)/2)+','+(y1+h)+' '+x1+','+(y1+h)+' Z"><title>'+escapeHTML(title)+'</title></path>';};
  const houseX=325,areaX=670,deviceX=995,gridHeight=t.imported*scale,solarHeight=t.solar*scale,injHeight=t.inj*scale;
- const sourceTop=Math.max(55,(height-gridHeight-solarHeight-65)/2),gridY=sourceTop,solarY=gridY+gridHeight+65;
+ const sourceTop=80,gridY=sourceTop,solarY=gridY+gridHeight+65;
  const exportY=Math.max(rootY+rootHeight+55,solarY+t.self*scale),fullHeight=Math.max(height,exportY+injHeight+65);
  links+=ribbon(45,gridY,houseX,rootY,gridHeight,C.hc,C.hc,'Réseau → maison : '+fmt(t.imported,3)+' kWh');
  links+=ribbon(45,solarY,houseX,rootY+gridHeight,t.self*scale,C.sol,C.hc,'Solaire → maison : '+fmt(t.self,3)+' kWh');
