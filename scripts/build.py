@@ -1,5 +1,6 @@
 from pathlib import Path
 import re
+from urllib.parse import quote
 import os
 os.chdir(Path(__file__).resolve().parents[1])
 Path("dist").mkdir(exist_ok=True)
@@ -43,6 +44,7 @@ js+='\n'+Path('src/new-runtime.js').read_text()+'\n'+Path('src/detail-config.js'
 js=js.replace('async function loadToday() {','async function legacyLoadToday() {').replace('async function loadDay() {','async function legacyLoadDay() {')
 js=Path('src/themes.js').read_text()+'\n'+js+'\n'+Path('src/theme-controls.js').read_text()
 js=js.replace("const C = {hp:'#d69b4d',hc:'#5b7f92',gas:'#b47453',sol:'#668b52',inj:'#418576',base:'#847199'};","const C = {...ENERGY_THEMES[activeTheme].colors};")
-result='<!DOCTYPE html>\n<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Maison VT · Énergie</title><style>'+css+'</style></head><body>'+shell+'\n<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script><script>\n'+js+'\n</script></body></html>'
+favicon='<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,'+quote(Path('src/favicon.svg').read_text(),safe='')+'">'
+result='<!DOCTYPE html>\n<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Maison VT · Énergie</title>'+favicon+'<style>'+css+'</style></head><body>'+shell+'\n<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script><script>\n'+js+'\n</script></body></html>'
 Path('dist/index.html').write_text(result)
 Path('dist/app.js').write_text(js)
