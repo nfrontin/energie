@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maison VT</title>
+<style>
+:root {
+  --bg:#f1f5f9; --bg2:#ffffff; --bg3:#f8fafc; --border:#e2e8f0;
+  --t1:#0f172a;  --t2:#475569;  --t3:#94a3b8;
+  --hp:#d97706;  --hc:#2563eb;  --gas:#dc2626; --sol:#16a34a; --inj:#0ea5e9;
+  --gc:rgba(0,0,0,0.06); --tc:#64748b; --r:10px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#0f172a;--bg2:#1e293b;--bg3:#1e293b;--border:#334155;
+  --t1:#f1f5f9;--t2:#94a3b8;--t3:#475569;
+  --gc:rgba(255,255,255,0.07);--tc:#94a3b8;
+}}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh}
+header{display:flex;align-items:center;justify-content:space-between;padding:11px 20px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.logo{font-size:15px;font-weight:600;letter-spacing:-.02em}
+.logo em{color:var(--hp);font-style:normal;margin-right:4px}
+#htime{font-size:12px;color:var(--t3);font-variant-numeric:tabular-nums}
+nav{display:flex;gap:2px;padding:10px 16px 0;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:7px 15px;font-size:13px;font-weight:500;border:none;border-bottom:2px solid transparent;background:none;color:var(--t3);cursor:pointer;white-space:nowrap;font-family:inherit;border-radius:6px 6px 0 0}
+.tab:hover{color:var(--t2)}
+.tab.on{color:var(--t1);border-bottom-color:var(--hp)}
+main{max-width:960px;margin:0 auto;padding:16px}
+.pane{display:none}
+.pane.on{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:12px}
+.ct{font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin-bottom:12px}
+.kv{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px}
+.kvl{font-size:11px;color:var(--t2);margin-bottom:3px}
+.kvv{font-size:19px;font-weight:600;letter-spacing:-.02em}
+.kvu{font-size:12px;font-weight:400;color:var(--t3)}
+.kvs{font-size:11px;color:var(--t3);margin-top:2px}
+/* Flow */
+.flow{display:grid;grid-template-columns:1fr 24px 1fr 24px 1fr;align-items:center;gap:6px;margin-bottom:12px}
+@media(max-width:480px){.flow{grid-template-columns:1fr 1fr 1fr}.farrow{display:none}}
+.fn{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 10px;text-align:center}
+.ficon{font-size:22px;margin-bottom:3px}
+.flabel{font-size:11px;color:var(--t2);margin-bottom:5px}
+.fval{font-size:20px;font-weight:600;letter-spacing:-.03em}
+.fu{font-size:12px;font-weight:400;color:var(--t3)}
+.farrow{color:var(--t3);text-align:center;font-size:18px;line-height:1}
+/* Phases */
+.phases{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.ph{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center}
+.phl{font-size:11px;color:var(--t3);font-weight:500;margin-bottom:5px}
+.phi{font-size:17px;font-weight:600}
+.phu{font-size:11px;color:var(--t2);margin-top:2px}
+/* Indexes */
+.idxs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+@media(max-width:560px){.idxs{grid-template-columns:repeat(2,1fr)}}
+.idx{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.idxl{font-size:11px;color:var(--t2);margin-bottom:3px}
+.idxv{font-size:14px;font-weight:500}
+.idxu{font-size:11px;color:var(--t3)}
+.ptec{display:inline-block;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:600;margin-top:3px}
+.ptec-hp{background:#fef3c7;color:#92400e}
+.ptec-hc{background:#dbeafe;color:#1e40af}
+@media(prefers-color-scheme:dark){.ptec-hp{background:#451a03;color:#fbbf24}.ptec-hc{background:#1e3a5f;color:#93c5fd}}
+/* Legend */
+.leg{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:9px}
+.li{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--t2)}
+.ld{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+/* Month nav */
+.mnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.mnb{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:5px 13px;font-size:12px;cursor:pointer;color:var(--t2);font-family:inherit}
+.mnb:hover{border-color:var(--t2)}
+.mnl{font-size:14px;font-weight:500}
+/* History toggle */
+.htog{display:flex;gap:6px;margin-bottom:12px}
+.htb{padding:4px 14px;font-size:12px;font-weight:500;border:1px solid var(--border);border-radius:20px;background:none;cursor:pointer;color:var(--t2);font-family:inherit}
+.htb.on{background:var(--t1);color:var(--bg2);border-color:var(--t1)}
+/* Refresh */
+.rfrow{display:flex;align-items:center;justify-content:flex-end;gap:5px;font-size:11px;color:var(--t3);margin-top:8px}
+.rfdot{width:6px;height:6px;border-radius:50%;background:#16a34a;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><em>⚡</em>Maison VT</div>
+  <div id="htime">—</div>
+</header>
+<nav>
+  <button class="tab on" data-pane="live">Maintenant</button>
+  <button class="tab"    data-pane="today">Aujourd'hui</button>
+  <button class="tab"    data-pane="day">Jour</button>
+  <button class="tab"    data-pane="month">Mois</button>
+  <button class="tab"    data-pane="history">Historique</button>
+</nav>
+
+<main>
+<div id="data-status" role="status" style="display:none;padding:10px 14px;margin-bottom:12px;border:1px solid #d97706;border-radius:8px;color:var(--t1)"></div>
+
+<!-- LIVE -->
+<section id="pane-live" class="pane on">
+  <!-- Gaz + Eau au-dessus de Maison -->
+  <div style="display:flex;justify-content:center;gap:8px;margin-bottom:4px">
+    <div class="fn" style="flex:1;max-width:150px">
+      <div class="ficon">🔥</div><div class="flabel">Gaz</div>
+      <div class="fval" id="l-gas" style="color:var(--t3)">—</div>
+      <div style="font-size:11px;margin-top:3px;min-height:15px;color:var(--t3)" id="l-gas-sub"></div>
+    </div>
+    <div class="fn" style="flex:1;max-width:150px">
+      <div class="ficon">💧</div><div class="flabel">Eau · index général</div>
+      <div class="fval" id="l-eau" style="font-size:13px;color:var(--t3)">—</div>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:center;gap:8px;margin-bottom:4px">
+    <div id="l-arrow-gas" style="flex:1;max-width:150px;text-align:center;font-size:16px;line-height:1;color:var(--t3)">↓</div>
+    <div id="l-arrow-eau" style="flex:1;max-width:150px;text-align:center;font-size:16px;line-height:1;color:var(--t3)">↓</div>
+  </div>
+  <div class="flow">
+    <div class="fn">
+      <div class="ficon">⚡</div><div class="flabel">Réseau</div>
+      <div class="fval" id="l-grid">—<span class="fu"> kVA</span></div>
+      <div style="font-size:11px;margin-top:3px;min-height:15px;font-weight:500" id="l-grid-sub"></div>
+    </div>
+    <div class="farrow" id="l-arrow-grid">→</div>
+    <div class="fn">
+      <div class="ficon">🏠</div><div class="flabel">Maison</div>
+      <div class="fval" id="l-house" style="font-size:13px;color:var(--t3)">—</div>
+    </div>
+    <div class="farrow" id="l-arrow-sol" style="color:var(--sol)">←</div>
+    <div class="fn">
+      <div class="ficon">☀️</div><div class="flabel">Solaire</div>
+      <div class="fval" id="l-sol">—<span class="fu"> W</span></div>
+    </div>
+  </div>
+  <div class="phases">
+    <div class="ph"><div class="phl">Phase 1</div><div class="phi" id="l-i1">—<span class="kvu"> A</span></div><div class="phu" id="l-u1">— V</div></div>
+    <div class="ph"><div class="phl">Phase 2</div><div class="phi" id="l-i2">—<span class="kvu"> A</span></div><div class="phu" id="l-u2">— V</div></div>
+    <div class="ph"><div class="phl">Phase 3</div><div class="phi" id="l-i3">—<span class="kvu"> A</span></div><div class="phu" id="l-u3">— V</div></div>
+  </div>
+  <div class="idxs">
+    <div class="idx"><div class="idxl">Index HP</div><div class="idxv" id="l-hp">—<span class="idxu"> kWh</span></div><div><span class="ptec" id="l-ptec">—</span></div></div>
+    <div class="idx"><div class="idxl">Index HC</div><div class="idxv" id="l-hc">—<span class="idxu"> kWh</span></div></div>
+    <div class="idx"><div class="idxl">Injection totale</div><div class="idxv" id="l-inj">—<span class="idxu"> kWh</span></div></div>
+    <div class="idx"><div class="idxl">Puiss. apparente</div><div class="idxv" id="l-pap">—<span class="idxu"> VA</span></div></div>
+  </div>
+  <div class="idxs" id="water-indexes"></div>
+  <div class="rfrow">
+    <div class="rfdot"></div>
+    <span id="l-ts">—</span> · actualisation dans <span id="l-next">30</span>s
+  </div>
+</section>
+
+<!-- TODAY -->
+<section id="pane-today" class="pane">
+  <div class="kpi">
+    <div class="kv"><div class="kvl">HP</div><div class="kvv" id="t-hp">—<span class="kvu"> kWh</span></div></div>
+    <div class="kv"><div class="kvl">HC</div><div class="kvv" id="t-hc">—<span class="kvu"> kWh</span></div></div>
+    <div class="kv"><div class="kvl">Total</div><div class="kvv" id="t-tot">—<span class="kvu"> kWh</span></div></div>
+    <div class="kv"><div class="kvl">Injection</div><div class="kvv" id="t-inj">—<span class="kvu"> kWh</span></div></div>
+    <div class="kv"><div class="kvl">Gaz</div><div class="kvv" id="t-gas">—<span class="kvu"> kWh</span></div></div>
+  </div>
+  <div class="card">
+    <div class="ct">Puissance consommée · Production</div>
+    <div class="leg">
+      <span class="li"><span class="ld" style="background:var(--hp)"></span>HP réseau</span>
+      <span class="li"><span class="ld" style="background:var(--hc)"></span>HC réseau</span>
+      <span class="li"><span class="ld" style="background:var(--inj)"></span>Injection (−)</span>
+      <span class="li"><span class="ld" style="background:var(--sol);border-radius:50%"></span>Solaire</span>
+      <span class="li"><span class="ld" style="background:var(--gas);border-radius:50%"></span>Gaz</span>
+    </div>
+    <div style="position:relative;height:240px"><canvas id="chart-today"></canvas></div>
+  </div>
+</section>
+
+<!-- DAY -->
+<section id="pane-day" class="pane">
+  <div class="mnav">
+    <button class="mnb" id="d-prev">‹ Préc.</button>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+      <span class="mnl" id="d-label">—</span>
+      <input type="date" id="d-picker" style="font-size:12px;padding:3px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--t1);cursor:pointer;font-family:inherit">
+    </div>
+    <button class="mnb" id="d-next">Suiv. ›</button>
+  </div>
+  <div class="kpi">
+    <div class="kv"><div class="kvl">HP</div><div class="kvv" id="d-hp">—<span class="kvu"> kWh</span></div></div>
+    <div class="kv"><div class="kvl">HC</div><div class="kvv" id="d-hc">—<span class="kvu"> kWh</span></div></div>
+    <div class="kv"><div class="kvl">Total</div><div class="kvv" id="d-tot">—<span class="kvu"> kWh</span></div></div>
+    <div class="kv"><div class="kvl">Injection</div><div class="kvv" id="d-inj">—<span class="kvu"> kWh</span></div></div>
+    <div class="kv"><div class="kvl">Gaz</div><div class="kvv" id="d-gas">—<span class="kvu"> kWh</span></div></div>
+  </div>
+  <div class="card">
+    <div class="ct">Puissance consommée · Production</div>
+    <div class="leg">
+      <span class="li"><span class="ld" style="background:var(--hp)"></span>HP réseau</span>
+      <span class="li"><span class="ld" style="background:#7c3aed"></span>BASE</span>
+      <span class="li"><span class="ld" style="background:var(--hc)"></span>HC réseau</span>
+      <span class="li"><span class="ld" style="background:var(--inj)"></span>Injection (−)</span>
+      <span class="li"><span class="ld" style="background:var(--sol);border-radius:50%"></span>Solaire</span>
+      <span class="li"><span class="ld" style="background:var(--gas);border-radius:50%"></span>Gaz</span>
+    </div>
+    <div style="position:relative;height:240px"><canvas id="chart-day"></canvas></div>
+  </div>
+</section>
+
+<!-- MONTH -->
+<section id="pane-month" class="pane">
+  <div class="mnav">
+    <button class="mnb" id="m-prev">‹ Préc.</button>
+    <span class="mnl" id="m-label">—</span>
+    <button class="mnb" id="m-next">Suiv. ›</button>
+  </div>
+  <div class="kpi">
+    <div class="kv"><div class="kvl">HP</div><div class="kvv" id="m-hp">—<span class="kvu"> kWh</span></div></div>
+    <div class="kv"><div class="kvl">HC</div><div class="kvv" id="m-hc">—<span class="kvu"> kWh</span></div></div>
+    <div class="kv"><div class="kvl">Total élec.</div><div class="kvv" id="m-tot">—<span class="kvu"> kWh</span></div></div>
+    <div class="kv"><div class="kvl">Injection</div><div class="kvv" id="m-inj">—<span class="kvu"> kWh</span></div></div>
+    <div class="kv"><div class="kvl">Gaz</div><div class="kvv" id="m-gas">—<span class="kvu"> kWh</span></div></div>
+  </div>
+  <div class="card">
+    <div class="leg">
+      <span class="li"><span class="ld" style="background:var(--hp)"></span>HP</span>
+      <span class="li"><span class="ld" style="background:var(--hc)"></span>HC</span>
+      <span class="li"><span class="ld" style="background:var(--inj);border-radius:50%"></span>Injection</span>
+      <span class="li"><span class="ld" style="background:var(--gas);border-radius:50%"></span>Gaz (axe droit)</span>
+    </div>
+    <div style="position:relative;height:260px"><canvas id="chart-month"></canvas></div>
+  </div>
+</section>
+
+<!-- HISTORY -->
+<section id="pane-history" class="pane">
+  <div class="htog">
+    <button class="htb on" id="h-monthly">Mensuel</button>
+    <button class="htb"    id="h-annual">Annuel</button>
+  </div>
+  <div class="htog" id="h-year-row" style="flex-wrap:wrap;gap:5px;margin-bottom:4px"></div>
+  <div class="card">
+    <div class="leg">
+      <span class="li"><span class="ld" style="background:var(--hp)"></span>HP</span>
+      <span class="li"><span class="ld" style="background:#7c3aed"></span>BASE</span>
+      <span class="li"><span class="ld" style="background:var(--hc)"></span>HC</span>
+      <span class="li"><span class="ld" style="background:var(--gas);border-radius:50%"></span>Gaz</span>
+      <span class="li"><span class="ld" style="background:var(--inj);border-radius:50%"></span>Injection</span>
+    </div>
+    <div style="position:relative;height:320px"><canvas id="chart-history"></canvas></div>
+    <p style="font-size:11px;color:var(--t2);margin-top:10px">Mois en cours partiel · historique calculé à partir de relevés quotidiens, avec répartition estimée aux limites des mois.</p>
+  </div>
+</section>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+'use strict';
+const DK  = matchMedia('(prefers-color-scheme:dark)').matches;
+const GC  = DK ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+const TC  = DK ? '#94a3b8' : '#64748b';
+const C   = { hp:'#d97706', hc:'#2563eb', gas:'#dc2626', sol:'#16a34a', inj:'#0ea5e9', base:'#7c3aed' };
+Chart.defaults.font.size = 11;
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif";
+
+const FR_M = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+// All calendar boundaries use the home's timezone, including DST changes.
+const HOME_TZ = 'Europe/Paris';
+const dateFormatter = new Intl.DateTimeFormat('en-CA', {timeZone: HOME_TZ, year:'numeric', month:'2-digit', day:'2-digit'});
+function localDate(d = new Date()) {
+  const p = Object.fromEntries(dateFormatter.formatToParts(d).map(p => [p.type,p.value]));
+  return `${p.year}-${p.month}-${p.day}`;
+}
+function shiftDay(day, n) {
+  const d = new Date(day + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10);
+}
+function localMidnight(day) {
+  const target = Date.parse(day + 'T00:00:00Z'); let t = target;
+  const f = new Intl.DateTimeFormat('en-GB', {timeZone:HOME_TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
+  for (let i=0;i<3;i++) {
+    const p = Object.fromEntries(f.formatToParts(new Date(t)).map(p => [p.type,p.value]));
+    const displayed = Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second);
+    t += target - displayed;
+  }
+  return t;
+}
+function dayISO(day) { return new Date(localMidnight(day)).toISOString(); }
+const requestFailures = new Map();
+function reportRequest(key, failed) {
+  if (failed) requestFailures.set(key, true); else requestFailures.delete(key);
+  const el = document.getElementById('data-status');
+  el.style.display = requestFailures.size ? 'block' : 'none';
+  el.textContent = requestFailures.size ? 'Certaines données sont indisponibles. Les valeurs manquantes ne représentent pas une consommation nulle. Réessayez en sélectionnant la vue.' : '';
+}
+async function getJSON(url) {
+  try {
+    const r = await fetch(url, {signal: AbortSignal.timeout(30000)});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (d.status === 'error') throw new Error('Erreur de données');
+    reportRequest(url.split('?')[0] + ':' + (new URL(url, location.origin).searchParams.get('query') || ''), false); return d;
+  } catch(e) { reportRequest(url.split('?')[0] + ':' + (new URL(url, location.origin).searchParams.get('query') || ''), true); throw e; }
+}
+
+// ── Envoy helper (temps réel solaire + réseau actif) ────────────
+async function fetchEnvoy() {
+  try {
+    const [rProd, rMeters] = await Promise.all([
+      fetch('/envoy/api/v1/production', {signal:AbortSignal.timeout(15000)}),
+      fetch('/envoy/ivp/meters/readings', {signal:AbortSignal.timeout(15000)}),
+    ]);
+    if (!rProd.ok || !rMeters.ok) throw new Error('Envoy indisponible');
+    reportRequest('envoy', false);
+    const prod = await rProd.json();
+    let gridActiveW = null;
+    if (rMeters.ok) {
+      const meters = await rMeters.json();
+      // eid 704643584 = compteur net-consumption (soutirage positif, injection négatif)
+      const conso = meters.find(m => m.eid === 704643584);
+      if (conso) gridActiveW = conso.activePower ?? null;
+    }
+    return {
+      wattsNow:      prod.wattsNow      ?? null,
+      wattHoursToday: prod.wattHoursToday ?? null,
+      gridActiveW,   // W actifs réseau : >0 soutirage, <0 injection
+    };
+  } catch { reportRequest('envoy', true); return null; }
+}
+
+// ── WES helper ──────────────────────────────────────────────────
+async function fetchWES() {
+  try {
+    const r = await fetch('/wes/data.cgx', {signal:AbortSignal.timeout(15000)});
+    if (!r.ok) throw new Error('WES indisponible');
+    const txt = await r.text();
+    const doc = new DOMParser().parseFromString(txt, 'text/xml');
+    if (doc.querySelector('parsererror') || !doc.querySelector('data')) throw new Error('Réponse WES invalide');
+    reportRequest('wes', false);
+    const g = tag => doc.getElementsByTagName(tag)[0]?.textContent ?? null;
+    const n = tag => { const v = g(tag); return v !== null && v.trim() !== '' && Number.isFinite(+v) ? +v : null; };
+    return {
+      water: [1,2,3,4].map(i => n('INDEX' + i)),
+      ptec:     g('PTEC'),
+      pap:   n('PAP'),   // SINSTS : puissance app. soutirée (VA) — 0 si solaire ≥ conso
+      papij: n('PAPIJ'), // SINSTI  : puissance app. injectée  (VA) — 0 si pas d'excédent (mode producteur)
+      hpleine:   n('H_PLEINE'),  // index HP en Wh
+      hcreuse:   n('H_CREUSE'),  // index HC en Wh
+      injection: n('INJECTION'), // index injection en Wh
+      iinst1:    n('IINST1'),
+      iinst2:    n('IINST2'),
+      iinst3:    n('IINST3'),
+      tension1:  n('TENSION1'),
+      tension2:  n('TENSION2'),
+      tension3:  n('TENSION3'),
+    };
+  } catch { reportRequest('wes', true); return Object.fromEntries(['ptec','pap','papij','hpleine','hcreuse','injection','iinst1','iinst2','iinst3','tension1','tension2','tension3'].map(k => [k,null])); }
+}
+
+// ── VM helpers ──────────────────────────────────────────────────
+
+// Derive consumption inside each series before combining it. Never subtract
+// counter readings from different series (the April 2026 migration changed offsets).
+function counterValues(series) {
+  const intervals = new Map();
+  const ordered = series.filter(s => s.values?.length).sort((a,b) =>
+    Number(a.metric?.db === 'home_assistant') - Number(b.metric?.db === 'home_assistant') || +a.values[0][0] - +b.values[0][0]);
+  for (const s of ordered) {
+    const values = s.values.filter(([t,v]) => Number.isFinite(+t) && Number.isFinite(+v)).sort((a,b)=>a[0]-b[0]);
+    for (let i=1;i<values.length;i++) {
+      const [start, first] = values[i-1], [end,last] = values[i];
+      const delta = +last - +first;
+      if (+end > +start && delta >= 0) intervals.set(+end, {start:+start,end:+end,delta});
+    }
+  }
+  const sorted = [...intervals.values()].sort((a,b)=>a.end-b.end);
+  const result = []; let total = 0;
+  for (const v of sorted) {
+    if (!result.length || result.at(-1)[0] < v.start) result.push([v.start, String(total)]);
+    total += v.delta; result.push([v.end,String(total)]);
+  }
+  result.intervals = sorted;
+  return result;
+}
+async function vmR(query, start, end, step) {
+  try {
+    const counter = /westic1(?:hp|hc|inj)_value|gaz_en_kwh_value|elec_old_/.test(query);
+    const d = await getJSON('/vm/api/v1/query_range?' + new URLSearchParams({query,start,end,step:String(step)}));
+    const results = d.data.result;
+    if (!results.length) return [];
+    // Include the endpoint: a daily grid alone would omit today's partial day.
+    if (counter) {
+      const tail = await getJSON('/vm/api/v1/query?' + new URLSearchParams({query:step >= 86400 ? `last_over_time(${query}[2d])` : query,time:end}));
+      for (const t of tail.data.result) {
+        const key = m => JSON.stringify(Object.entries(m).sort());
+        const s = results.find(s => key(s.metric) === key(t.metric));
+        if (s && +t.value[0] > +s.values.at(-1)[0]) s.values.push(t.value);
+      }
+      return counterValues(results);
+    }
+    return results.reduce((best,cur)=>cur.values.length > best.values.length ? cur : best).values;
+  } catch { return []; }
+}
+// Allocate measured deltas to Paris calendar periods. At coarse historical
+// resolution, a boundary-crossing interval is apportioned by elapsed time.
+function periodDeltas(values, divisor, monthly = false) {
+  const intervals = values.intervals || values.slice(1).map(([end,last],i)=>({start:+values[i][0],end:+end,delta:+last-+values[i][1]}));
+  const out = {};
+  for (const v of intervals) {
+    if (v.delta < 0 || v.end <= v.start) continue;
+    let t = v.start;
+    while (t < v.end) {
+      const day = localDate(new Date(t*1000));
+      const key = monthly ? day.slice(0,7) : day;
+      let next;
+      if (monthly) {
+        const d = new Date(day.slice(0,7)+'-01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth()+1);
+        next = localMidnight(d.toISOString().slice(0,10))/1000;
+      } else next = localMidnight(shiftDay(day,1))/1000;
+      const until = Math.min(v.end,next);
+      out[key] = (out[key] ?? 0) + v.delta*(until-t)/(v.end-v.start)/divisor;
+      t = until;
+    }
+  }
+  return out;
+}
+function monthlyDeltas(values, divisor) { return periodDeltas(values,divisor,true); }
+function dailyDeltas(values, divisor) { return periodDeltas(values,divisor); }
+
+function fmt(v, dec = 0) {
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  return (+v).toLocaleString('fr-FR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+function nowISO()  { return new Date().toISOString(); }
+function todayISO()  {
+  return dayISO(localDate());
+}
+
+// ── Header clock ────────────────────────────────────────────────
+setInterval(() => {
+  document.getElementById('htime').textContent =
+    new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}, 1000);
+
+// ── Tabs ─────────────────────────────────────────────────────────
+const loaded = {};
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+    document.querySelectorAll('.pane').forEach(p => p.classList.remove('on'));
+    btn.classList.add('on');
+    const id = btn.dataset.pane;
+    document.getElementById('pane-' + id).classList.add('on');
+    clearInterval(liveTimer);
+    if (id === 'live') startLive();
+    else ({ today: loadToday, day: loadDay, month: loadMonth, history: loadHistory })[id]?.();
+  });
+});
+
+// ── Chart factory ────────────────────────────────────────────────
+const charts = {};
+function mkChart(id, type, labels, datasets, scalesExtra) {
+  if (charts[id]) { charts[id].destroy(); }
+  charts[id] = new Chart(document.getElementById(id), {
+    type,
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => {
+          if (c.raw === null || c.raw === undefined) return null;
+          return `${c.dataset.label}: ${(+c.raw).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} ${c.dataset._unit || 'kWh'}`;
+        }}}
+      },
+      scales: Object.assign({
+        x: { grid: { color: GC }, ticks: { color: TC, autoSkip: true, maxTicksLimit: 14, maxRotation: 0 } },
+        y: { grid: { color: GC }, ticks: { color: TC, callback: v => v >= 1000 ? (v/1000) + 'k' : v } },
+      }, scalesExtra || {}),
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// LIVE
+// ══════════════════════════════════════════════════════════════════
+let liveTimer, liveCD = 30;
+
+let livePending = false;
+async function loadLive() {
+  if (livePending) return;
+  livePending = true;
+  try {
+  const [wes, envoy, vGasLive] = await Promise.all([
+    fetchWES(), fetchEnvoy(),
+    vmR('sensor.gaz_en_kwh_value{db="home_assistant"}', todayISO(), nowISO(), 300),
+  ]);
+
+  document.getElementById('l-eau').innerHTML = fmt(wes.water?.[3] == null ? null : wes.water[3]/1000, 3) + '<span class="fu"> m³</span>';
+  document.getElementById('water-indexes').innerHTML = ['Eau chaude','Arrosage','Piscine','Eau générale'].map((name,i) => '<div class="idx"><div class="idxl">'+name+' · index</div><div class="idxv">'+fmt(wes.water?.[i], 0)+'<span class="idxu"> L</span></div></div>').join('');
+  const gEl  = document.getElementById('l-grid');
+  const subEl   = document.getElementById('l-grid-sub');
+  const arrowEl = document.getElementById('l-arrow-grid');
+  gEl.innerHTML = '—<span class="fu"> kVA</span>';
+  subEl.textContent = ''; arrowEl.textContent = '·';
+  const hasPAP   = wes.pap   > 0;
+  const hasPAPIJ = wes.papij > 0;
+
+  if (hasPAPIJ) {
+    gEl.innerHTML = (wes.papij / 1000).toFixed(2) + '<span class="fu"> kVA</span>';
+    gEl.style.color = 'var(--sol)';
+    subEl.innerHTML = '<span style="color:var(--sol)">↑ injection réseau</span>';
+    arrowEl.textContent = '←';
+    arrowEl.style.color = 'var(--sol)';
+  } else if (hasPAP) {
+    gEl.innerHTML = (wes.pap / 1000).toFixed(2) + '<span class="fu"> kVA</span>';
+    gEl.style.color = 'var(--t1)';
+    subEl.innerHTML = '<span style="color:var(--t3)">↓ soutirage</span>';
+    arrowEl.textContent = '→';
+    arrowEl.style.color = '';
+  } else if (wes.pap !== null && wes.pap !== undefined) {
+    gEl.innerHTML = '0<span class="fu"> kVA</span>';
+    gEl.style.color = 'var(--sol)';
+    subEl.innerHTML = '<span style="color:var(--sol)">⚡ équilibré</span>';
+    arrowEl.textContent = '·';
+    arrowEl.style.color = 'var(--t3)';
+  }
+
+  // Phases directement depuis WES
+  document.getElementById('l-i1').innerHTML = (wes.iinst1 !== null ? wes.iinst1 : '—') + '<span class="kvu"> A</span>';
+  document.getElementById('l-u1').textContent = (wes.tension1 !== null ? wes.tension1 : '—') + ' V';
+  document.getElementById('l-i2').innerHTML = (wes.iinst2 !== null ? wes.iinst2 : '—') + '<span class="kvu"> A</span>';
+  document.getElementById('l-u2').textContent = (wes.tension2 !== null ? wes.tension2 : '—') + ' V';
+  document.getElementById('l-i3').innerHTML = (wes.iinst3 !== null ? wes.iinst3 : '—') + '<span class="kvu"> A</span>';
+  document.getElementById('l-u3').textContent = (wes.tension3 !== null ? wes.tension3 : '—') + ' V';
+
+  // Index depuis WES directement (temps réel, pas de VM)
+  const hp  = wes.hpleine  !== null ? Math.round(wes.hpleine  / 1000) : null;
+  const hc  = wes.hcreuse  !== null ? Math.round(wes.hcreuse  / 1000) : null;
+  const inj = wes.injection !== null ? Math.round(wes.injection / 1000) : null;
+  document.getElementById('l-hp').innerHTML  = fmt(hp)  + '<span class="idxu"> kWh</span>';
+  document.getElementById('l-hc').innerHTML  = fmt(hc)  + '<span class="idxu"> kWh</span>';
+  document.getElementById('l-inj').innerHTML = fmt(inj) + '<span class="idxu"> kWh</span>';
+  document.getElementById('l-pap').innerHTML = (wes.pap !== null && wes.pap !== undefined) ? fmt(wes.pap) + '<span class="idxu"> VA</span>' : '—<span class="idxu"> VA</span>';
+
+  // PTEC: prefer WES real value; fall back to time-based estimate
+  const ptEl = document.getElementById('l-ptec');
+  if (wes.ptec) {
+    const isHCw = wes.ptec.toLowerCase().match(/creuse|^hc|^..hc$/i);
+    ptEl.textContent = isHCw ? 'Heures Creuses' : 'Heures Pleines';
+    ptEl.className = 'ptec ' + (isHCw ? 'ptec-hc' : 'ptec-hp');
+  } else {
+    ptEl.textContent = 'Tarif indisponible';
+    ptEl.className = 'ptec';
+  }
+
+  // Solaire (Envoy temps réel)
+  const solEl      = document.getElementById('l-sol');
+  const arrowSolEl = document.getElementById('l-arrow-sol');
+  if (envoy && envoy.wattsNow !== null) {
+    const kw = envoy.wattsNow / 1000;
+    if (kw >= 0.05) {
+      solEl.innerHTML = kw.toFixed(2) + '<span class="fu"> kW</span>';
+      solEl.style.color = 'var(--sol)';
+      arrowSolEl.textContent = '←';
+      arrowSolEl.style.color = 'var(--sol)';
+    } else {
+      solEl.innerHTML = '0<span class="fu"> kW</span>';
+      solEl.style.color = 'var(--t3)';
+      arrowSolEl.textContent = '·';
+      arrowSolEl.style.color = 'var(--t3)';
+    }
+  } else {
+    solEl.innerHTML = '—<span class="fu"> W</span>';
+    arrowSolEl.textContent = '·';
+    arrowSolEl.style.color = 'var(--t3)';
+  }
+
+  // Maison = solaire + réseau actif (W)
+  // gridActiveW : >0 soutirage, <0 injection — source : compteur net-consumption Envoy (eid 704643584)
+  const houseEl = document.getElementById('l-house');
+  if (envoy && envoy.wattsNow !== null && envoy.gridActiveW !== null) {
+    const houseW = envoy.wattsNow + envoy.gridActiveW;
+    houseEl.innerHTML = (houseW / 1000).toFixed(2) + '<span class="fu"> kW</span>';
+    houseEl.style.fontSize = '';
+    houseEl.style.color = 'var(--t1)';
+  } else {
+    houseEl.innerHTML = '—';
+    houseEl.style.fontSize = '13px';
+    houseEl.style.color = 'var(--t3)';
+  }
+
+  // Gaz : puissance live (dernier delta 5 min) + total du jour
+  const gasEl    = document.getElementById('l-gas');
+  const gasSubEl = document.getElementById('l-gas-sub');
+  const arrowGasEl = document.getElementById('l-arrow-gas');
+  if (vGasLive.length >= 2 && Date.now()/1000 - +vGasLive.at(-1)[0] <= 600) {
+    const [t2, v2] = vGasLive.at(-1);
+    const [t1, v1] = vGasLive.at(-2);
+    const dt = +t2 - +t1;
+    const gasKw = (dt > 0 && dt <= 600) ? Math.max(0, (+v2 - +v1) * 3600 / dt) : 0;
+    const gasKwhD = Math.max(0, Math.round((+v2 - +vGasLive[0][1]) * 10) / 10);
+    if (gasKw > 0.5) {
+      gasEl.innerHTML = gasKw.toFixed(1) + '<span class="fu"> kW</span>';
+      gasEl.style.color = 'var(--gas)';
+      arrowGasEl.style.color = 'var(--gas)';
+    } else {
+      gasEl.innerHTML = '0<span class="fu"> kW</span>';
+      gasEl.style.color = 'var(--t3)';
+      arrowGasEl.style.color = 'var(--t3)';
+    }
+    gasSubEl.textContent = fmt(gasKwhD, 1) + ' kWh auj.';
+  } else {
+    gasEl.innerHTML = '—';
+    gasSubEl.textContent = vGasLive.length ? 'Dernier relevé ancien · puissance indisponible' : 'Aucun relevé disponible';
+    arrowGasEl.style.color = 'var(--t3)';
+  }
+
+  const failed = requestFailures.size > 0;
+  document.getElementById('l-ts').textContent = failed ? 'Collecte incomplète' : 'Actualisé à ' + new Date().toLocaleTimeString('fr-FR', {timeZone:HOME_TZ,hour:'2-digit',minute:'2-digit'});
+  document.querySelector('.rfdot').style.background = failed ? '#d97706' : '#16a34a';
+  } finally { livePending = false; }
+}
+
+function startLive() {
+  loadLive();
+  clearInterval(liveTimer);
+  liveCD = 30;
+  liveTimer = setInterval(() => {
+    liveCD--;
+    document.getElementById('l-next').textContent = liveCD;
+    if (liveCD <= 0) { liveCD = 30; loadLive(); }
+  }, 1000);
+}
+
+startLive();
+loaded['live'] = true;
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && document.querySelector('.tab.on')?.dataset?.pane === 'live') {
+    startLive();
+  } else {
+    clearInterval(liveTimer);
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+// TODAY
+// ══════════════════════════════════════════════════════════════════
+async function loadToday() {
+  const start = todayISO();
+  const end   = nowISO();
+
+  const [vHP, vHC, vInj, vSol, vGas] = await Promise.all([
+    vmR('sensor.westic1hp_value{entity_id="westic1hp"}', start, end, 300),
+    vmR('sensor.westic1hc_value{entity_id="westic1hc"}', start, end, 300),
+    vmR('sensor.westic1inj_value', start, end, 300),
+    vmR('sensor.envoy_122204021247_current_power_production_value', start, end, 300),
+    vmR('sensor.gaz_en_kwh_value{db="home_assistant"}', start, end, 300),
+  ]);
+
+  // Build HP/HC delta map: ts → W
+  const hpM = new Map(vHP.map(([t, v]) => [+t, +v]));
+  const hcM = new Map(vHC.map(([t, v]) => [+t, +v]));
+  const hphcTs = [...new Set([...hpM.keys(), ...hcM.keys()])].sort((a, b) => a - b);
+  const hpDelta = new Map(), hcDelta = new Map();
+  for (let i = 1; i < hphcTs.length; i++) {
+    const t = hphcTs[i], tp = hphcTs[i - 1];
+    const dt = t - tp;
+    if (dt <= 0 || dt > 1200) continue;
+    const scale = 3600 / dt;
+    const hp  = hpM.get(t)  ?? hpM.get(tp)  ?? 0;
+    const hpP = hpM.get(tp) ?? hp;
+    const hc  = hcM.get(t)  ?? hcM.get(tp)  ?? 0;
+    const hcP = hcM.get(tp) ?? hc;
+    hpDelta.set(t, Math.max(0, Math.round((hp - hpP) * scale)));
+    hcDelta.set(t, Math.max(0, Math.round((hc - hcP) * scale)));
+  }
+
+  // Solar map: filter to daylight hours only (avoid stale night values)
+  const todayMidnightLocal = new Date(localMidnight(localDate()));
+  const minSolTs = Math.floor((+todayMidnightLocal + 5 * 3600 * 1000) / 1000);
+  const maxSolTs = Math.floor((+todayMidnightLocal + 22 * 3600 * 1000) / 1000);
+  const solM = new Map();
+  for (const [t, v] of vSol) {
+    const ts = +t;
+    if (ts < +todayMidnightLocal/1000) continue;
+    solM.set(ts, Math.round(+v * 100) / 100);
+  }
+
+  // Injection delta map: ts → −W (negative = power sent to grid)
+  const injM2 = new Map(vInj.map(([t, v]) => [+t, +v]));
+  const injTs2 = [...injM2.keys()].sort((a, b) => a - b);
+  const injDelta = new Map();
+  for (let i = 1; i < injTs2.length; i++) {
+    const t = injTs2[i], tp = injTs2[i - 1];
+    const dt = t - tp;
+    if (dt <= 0 || dt > 1200) continue;
+    const delta = Math.max(0, Math.round(((injM2.get(t) ?? 0) - (injM2.get(tp) ?? 0)) * 3600 / dt));
+    if (delta > 0) injDelta.set(t, -delta);
+  }
+
+  // Gas delta map: ts → W (0 when boiler off, positive when firing)
+  const gasM = new Map(vGas.map(([t, v]) => [+t, +v]));
+  const gasAllTs = [...gasM.keys()].sort((a, b) => a - b);
+  const gasDelta = new Map();
+  for (let i = 1; i < gasAllTs.length; i++) {
+    const t = gasAllTs[i], tp = gasAllTs[i - 1];
+    const dt = t - tp;
+    if (dt <= 0 || dt > 1200) continue;
+    gasDelta.set(t, Math.max(0, Math.round((gasM.get(t) - gasM.get(tp)) * 3600 / dt * 1000)));
+  }
+
+  // Unified timeline: union of HP/HC + solar + injection + gas timestamps
+  const allTs = [...new Set([...hpDelta.keys(), ...solM.keys(), ...injDelta.keys(), ...gasDelta.keys()])].sort((a, b) => a - b);
+  const labels = [], pwHP = [], pwHC = [], pwSolLine = [], pwInj = [], pwGas = [];
+  for (const t of allTs) {
+    labels.push(new Date(t * 1000).toLocaleTimeString('fr-FR', { timeZone:HOME_TZ, hour: '2-digit', minute: '2-digit' }));
+    pwHP.push(hpDelta.has(t) ? hpDelta.get(t) : null);
+    pwHC.push(hcDelta.has(t) ? hcDelta.get(t) : null);
+    pwSolLine.push(solM.has(t) ? solM.get(t) : null);
+    pwInj.push(injDelta.has(t) ? injDelta.get(t) : null);
+    // Gas: 0 when not in gasDelta but gas data exists → flat zero line between bursts
+    pwGas.push(gasDelta.size > 0 ? (gasDelta.has(t) ? gasDelta.get(t) : 0) : null);
+  }
+
+  // Daily totals
+  const kwhOf = (v) => v.length > 1 ? Math.max(0, Math.round((+v.at(-1)[1] - +v[0][1]) / 100) / 10) : null;
+  const hpD  = kwhOf(vHP);
+  const hcD  = kwhOf(vHC);
+  const injD = kwhOf(vInj);
+  const gasD = vGas.length > 1 ? Math.max(0, Math.round((+vGas.at(-1)[1] - +vGas[0][1]) * 10) / 10) : null;
+  document.getElementById('t-hp').innerHTML  = fmt(hpD, 1)  + '<span class="kvu"> kWh</span>';
+  document.getElementById('t-hc').innerHTML  = fmt(hcD, 1)  + '<span class="kvu"> kWh</span>';
+  document.getElementById('t-tot').innerHTML = (hpD !== null && hcD !== null ? fmt(Math.round((hpD + hcD) * 10) / 10, 1) : '—') + '<span class="kvu"> kWh</span>';
+  document.getElementById('t-inj').innerHTML = fmt(injD, 1) + '<span class="kvu"> kWh</span>';
+  document.getElementById('t-gas').innerHTML = (gasD !== null ? fmt(gasD, 1) : '—') + '<span class="kvu"> kWh</span>';
+
+  const hasSol = pwSolLine.some(v => v !== null && v > 0);
+  const hasInj = injDelta.size > 0;
+  const hasGas = gasDelta.size > 0;
+  const datasetsToday = [
+    { label: 'HP', data: pwHP, backgroundColor: C.hp + 'cc', stack: 'p', _unit: 'W' },
+    { label: 'HC', data: pwHC, backgroundColor: C.hc + 'cc', stack: 'p', _unit: 'W' },
+  ];
+  if (hasInj) {
+    datasetsToday.push({ label: 'Injection', data: pwInj, backgroundColor: C.inj + 'bb', stack: 'p', _unit: 'W' });
+  }
+  if (hasSol) {
+    datasetsToday.push({
+      label: 'Solaire', data: pwSolLine.map(v => v !== null ? Math.round(v * 1000) : null),
+      type: 'line', stack: 'sol', borderColor: C.sol, borderWidth: 2,
+      pointRadius: 0, tension: 0.3, fill: false, spanGaps: true, _unit: 'W',
+    });
+  }
+  if (hasGas) {
+    datasetsToday.push({
+      label: 'Gaz', data: pwGas, type: 'line', stack: 'gas',
+      borderColor: C.gas, borderWidth: 1.5, pointRadius: 0, tension: 0.2, fill: false, spanGaps: false, _unit: 'W',
+    });
+  }
+  mkChart('chart-today', 'bar', labels, datasetsToday, {
+    x: { stacked: true, grid: { color: GC }, ticks: { color: TC, maxTicksLimit: 12, maxRotation: 0 } },
+    y: { stacked: true, grid: { color: GC }, ticks: { color: TC, callback: v => Math.abs(v) >= 1000 ? (v/1000)+'kW' : v+'W' } },
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// DAY
+// ══════════════════════════════════════════════════════════════════
+let curDay = localDate();
+
+function dayLabel(iso) {
+  const d = new Date(iso + 'T12:00:00Z');
+  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+const dPicker = document.getElementById('d-picker');
+dPicker.max = localDate();
+dPicker.min = '2016-01-01';
+dPicker.value = curDay;
+dPicker.addEventListener('change', () => {
+  const v = dPicker.value;
+  if (v && v <= localDate()) {
+    curDay = v;
+    loadDay();
+  }
+});
+
+document.getElementById('d-prev').addEventListener('click', () => {
+  const d = new Date(curDay + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() - 1);
+  curDay = d.toISOString().slice(0, 10);
+  dPicker.value = curDay;
+  loadDay();
+});
+document.getElementById('d-next').addEventListener('click', () => {
+  const d = new Date(curDay + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + 1);
+  const next = d.toISOString().slice(0, 10);
+  if (next <= localDate()) {
+    curDay = next;
+    dPicker.value = curDay;
+    loadDay();
+  }
+});
+
+async function loadDay() {
+  document.getElementById('d-label').textContent = dayLabel(curDay);
+  document.getElementById('d-picker').value = curDay;
+
+  // Fetch from previous day (for first-point delta) to end of selected day
+  const prev = new Date(curDay + 'T12:00:00Z');
+  prev.setUTCDate(prev.getUTCDate() - 1);
+  const fetchStart = dayISO(prev.toISOString().slice(0, 10));
+  const today = localDate();
+  const isToday = curDay === today;
+  const fetchEnd = isToday ? new Date().toISOString() : dayISO(shiftDay(curDay,1));
+
+  const [vHP, vHC, vBase, vInj, vSol, vGas] = await Promise.all([
+    vmR('sensor.westic1hp_value{entity_id="westic1hp"}', fetchStart, fetchEnd, 300),
+    vmR('sensor.westic1hc_value{entity_id="westic1hc"}', fetchStart, fetchEnd, 300),
+    vmR('elec_old_base',                                  fetchStart, fetchEnd, 300),
+    vmR('sensor.westic1inj_value',                        fetchStart, fetchEnd, 300),
+    vmR('sensor.envoy_122204021247_current_power_production_value', fetchStart, fetchEnd, 300),
+    vmR('sensor.gaz_en_kwh_value{db="home_assistant"}',  fetchStart, fetchEnd, 300),
+  ]);
+
+  const useBase = curDay < '2019-04-01';
+
+  const hpSrc   = useBase ? [] : vHP;
+  const hcSrc   = useBase ? [] : vHC;
+  const baseSrc = useBase ? vBase : [];
+
+  const hpM   = new Map(hpSrc.map(([t, v])   => [+t, +v]));
+  const hcM   = new Map(hcSrc.map(([t, v])   => [+t, +v]));
+  const baseM = new Map(baseSrc.map(([t, v]) => [+t, +v]));
+
+  const dayStart = localMidnight(curDay) / 1000;
+  const dayEnd   = new Date(dayISO(shiftDay(curDay,1))).getTime() / 1000;
+
+  // Timestamps within the selected day
+  const tsList = [...new Set([...hpM.keys(), ...hcM.keys(), ...baseM.keys()])]
+    .filter(t => t >= dayStart && t <= dayEnd).sort((a, b) => a - b);
+
+  // Previous-day last point for first delta
+  const prevTAll = [...new Set([...hpM.keys(), ...hcM.keys(), ...baseM.keys()])].filter(t => t < dayStart);
+  const prevT = prevTAll.length ? Math.max(...prevTAll) : null;
+
+  // Compute deltas
+  const hpDelta = new Map(), hcDelta = new Map(), baseDelta = new Map();
+  const allForDelta = prevT ? [prevT, ...tsList] : tsList;
+  for (let i = 1; i < allForDelta.length; i++) {
+    const t = allForDelta[i], tp = allForDelta[i - 1];
+    if (t < dayStart) continue;
+    const dt = t - tp;
+    if (dt <= 0 || dt > 1200) continue;
+    const scale = 3600 / dt;
+    const hp   = hpM.get(t)   ?? hpM.get(tp)   ?? 0;
+    const hpP  = hpM.get(tp)  ?? hp;
+    const hc   = hcM.get(t)   ?? hcM.get(tp)   ?? 0;
+    const hcP  = hcM.get(tp)  ?? hc;
+    const base  = baseM.get(t)  ?? baseM.get(tp)  ?? 0;
+    const baseP = baseM.get(tp) ?? base;
+    hpDelta.set(t, Math.max(0, Math.round((hp - hpP) * scale)));
+    hcDelta.set(t, Math.max(0, Math.round((hc - hcP) * scale)));
+    baseDelta.set(t, Math.max(0, Math.round((base - baseP) * scale)));
+  }
+
+  // Solar line: filter to daylight hours of selected day
+  const dayLocalMidnight = new Date(localMidnight(curDay)); // local midnight
+  const minSolTs = Math.floor((+dayLocalMidnight + 5 * 3600 * 1000) / 1000);
+  const maxSolTs = Math.floor((+dayLocalMidnight + 22 * 3600 * 1000) / 1000);
+  const solM = new Map();
+  for (const [t, v] of vSol) {
+    const ts = +t;
+    if (ts < dayStart || ts > dayEnd) continue;
+    solM.set(ts, Math.round(+v * 100) / 100);
+  }
+
+  // Injection delta map: ts → −W
+  const injM2 = new Map(vInj.map(([t, v]) => [+t, +v]));
+  const injTs2 = [...injM2.keys()].filter(t => t >= dayStart && t <= dayEnd).sort((a, b) => a - b);
+  // include one prev-day point for first delta
+  const injPrevTs = [...injM2.keys()].filter(t => t < dayStart);
+  const injPrevT  = injPrevTs.length ? Math.max(...injPrevTs) : null;
+  const injForDelta = injPrevT ? [injPrevT, ...injTs2] : injTs2;
+  const injDelta = new Map();
+  for (let i = 1; i < injForDelta.length; i++) {
+    const t = injForDelta[i], tp = injForDelta[i - 1];
+    if (t < dayStart) continue;
+    const dt = t - tp;
+    if (dt <= 0 || dt > 1200) continue;
+    const delta = Math.max(0, Math.round(((injM2.get(t) ?? 0) - (injM2.get(tp) ?? 0)) * 3600 / dt));
+    if (delta > 0) injDelta.set(t, -delta);
+  }
+
+  // Gas delta map for this day: ts → W (0 when off, positive when firing)
+  const gasM = new Map(vGas.map(([t, v]) => [+t, +v]));
+  const gasAllTs = [...gasM.keys()].sort((a, b) => a - b);
+  const gasDelta = new Map();
+  for (let i = 1; i < gasAllTs.length; i++) {
+    const t = gasAllTs[i], tp = gasAllTs[i - 1];
+    const dt = t - tp;
+    if (dt <= 0 || dt > 1200) continue;
+    if (t >= dayStart && t <= dayEnd)
+      gasDelta.set(t, Math.max(0, Math.round((gasM.get(t) - gasM.get(tp)) * 3600 / dt * 1000)));
+  }
+
+  // Unified timeline: union of delta timestamps + solar + injection + gas timestamps
+  const deltaTs = useBase ? [...baseDelta.keys()] : [...new Set([...hpDelta.keys(), ...hcDelta.keys()])];
+  const allTs = [...new Set([...deltaTs, ...solM.keys(), ...injDelta.keys(), ...gasDelta.keys()])].sort((a, b) => a - b);
+
+  const labels = [], pwHP = [], pwHC = [], pwBase = [], pwSolLine = [], pwInj = [], pwGas = [];
+  for (const t of allTs) {
+    labels.push(new Date(t * 1000).toLocaleTimeString('fr-FR', { timeZone:HOME_TZ, hour: '2-digit', minute: '2-digit' }));
+    pwHP.push(hpDelta.has(t) ? hpDelta.get(t) : null);
+    pwHC.push(hcDelta.has(t) ? hcDelta.get(t) : null);
+    pwBase.push(baseDelta.has(t) ? baseDelta.get(t) : null);
+    pwSolLine.push(solM.has(t) ? solM.get(t) : null);
+    pwInj.push(injDelta.has(t) ? injDelta.get(t) : null);
+    // Gas: 0 for non-gas timestamps when gas data exists → flat zero line between bursts
+    pwGas.push(gasDelta.size > 0 ? (gasDelta.has(t) ? gasDelta.get(t) : 0) : null);
+  }
+
+  // Daily totals
+  const kwhOf = arr => dailyDeltas(arr,1000)[curDay] ?? null;
+  const hpD  = useBase ? null : kwhOf(vHP);
+  const hcD  = useBase ? null : kwhOf(vHC);
+  const baseD = useBase ? kwhOf(vBase) : null;
+  const injD = kwhOf(vInj);
+  const totD = useBase ? baseD : ((hpD !== null && hcD !== null) ? Math.round((hpD + hcD) * 10) / 10 : null);
+  // Gas total for the day
+  const gasD = dailyDeltas(vGas,1)[curDay] ?? null;
+
+  document.getElementById('d-hp').innerHTML  = useBase
+    ? (baseD !== null ? `${fmt(baseD, 1)}<span class="kvu"> kWh (BASE)</span>` : '—<span class="kvu"> kWh</span>')
+    : fmt(hpD, 1) + '<span class="kvu"> kWh</span>';
+  document.getElementById('d-hc').innerHTML  = useBase ? '—<span class="kvu"> kWh</span>' : fmt(hcD, 1) + '<span class="kvu"> kWh</span>';
+  document.getElementById('d-tot').innerHTML = fmt(totD, 1) + '<span class="kvu"> kWh</span>';
+  document.getElementById('d-inj').innerHTML = fmt(injD, 1) + '<span class="kvu"> kWh</span>';
+  document.getElementById('d-gas').innerHTML = (gasD !== null ? fmt(gasD, 1) : '—') + '<span class="kvu"> kWh</span>';
+
+  const hasSol = pwSolLine.some(v => v !== null && v > 0);
+  const hasInj = injDelta.size > 0;
+  const hasGas = gasDelta.size > 0;
+  const datasets = [];
+  if (!useBase) {
+    datasets.push({ label: 'HP', data: pwHP, backgroundColor: C.hp + 'cc', stack: 'p', _unit: 'W' });
+    datasets.push({ label: 'HC', data: pwHC, backgroundColor: C.hc + 'cc', stack: 'p', _unit: 'W' });
+  } else {
+    datasets.push({ label: 'BASE', data: pwBase, backgroundColor: C.base + 'cc', stack: 'p', _unit: 'W' });
+  }
+  if (hasInj) {
+    datasets.push({ label: 'Injection', data: pwInj, backgroundColor: C.inj + 'bb', stack: 'p', _unit: 'W' });
+  }
+  if (hasSol) {
+    datasets.push({
+      label: 'Solaire', data: pwSolLine.map(v => v !== null ? Math.round(v * 1000) : null),
+      type: 'line', stack: 'sol', borderColor: C.sol, borderWidth: 2,
+      pointRadius: 0, tension: 0.3, fill: false, spanGaps: true, _unit: 'W',
+    });
+  }
+  const scalesD = {
+    x: { stacked: true, grid: { color: GC }, ticks: { color: TC, maxTicksLimit: 12, maxRotation: 0 } },
+    y: { stacked: true, grid: { color: GC }, ticks: { color: TC, callback: v => Math.abs(v) >= 1000 ? (v/1000)+'kW' : v+'W' } },
+  };
+  if (hasGas) {
+    datasets.push({
+      label: 'Gaz', data: pwGas, type: 'line', stack: 'gas',
+      borderColor: C.gas, borderWidth: 1.5, pointRadius: 0, tension: 0.2, fill: false, spanGaps: false, _unit: 'W',
+    });
+  }
+  mkChart('chart-day', 'bar', labels, datasets, scalesD);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MONTH
+// ══════════════════════════════════════════════════════════════════
+let curMonth = localDate().slice(0,7);
+
+document.getElementById('m-prev').addEventListener('click', () => {
+  const d = new Date(curMonth + '-01T00:00:00Z');
+  d.setUTCMonth(d.getUTCMonth() - 1);
+  curMonth = d.toISOString().slice(0, 7);
+  loadMonth();
+});
+document.getElementById('m-next').addEventListener('click', () => {
+  const d = new Date(curMonth + '-01T00:00:00Z');
+  d.setUTCMonth(d.getUTCMonth() + 1);
+  if (d.toISOString().slice(0, 7) <= localDate().slice(0,7)) {
+    curMonth = d.toISOString().slice(0, 7);
+    loadMonth();
+  }
+});
+
+async function loadMonth() {
+  const [y, mo] = curMonth.split('-');
+  document.getElementById('m-label').textContent = `${FR_M[+mo - 1]} ${y}`;
+
+  // Fetch from 1 day before the month for first-day delta
+  const monthStart = curMonth + '-01';
+  const fetchStart = dayISO(monthStart);
+  const nextMonth = new Date(curMonth+'-01T12:00:00Z'); nextMonth.setUTCMonth(nextMonth.getUTCMonth()+1);
+  const fetchEnd = dayISO(nextMonth.toISOString().slice(0,10));
+  const today = localDate();
+  const capEnd = new Date(Math.min(Date.parse(fetchEnd),Date.now())).toISOString();
+
+  const [vHP, vHC, vInj, vGas] = await Promise.all([
+    vmR('sensor.westic1hp_value{entity_id="westic1hp"}', fetchStart, capEnd, 300),
+    vmR('sensor.westic1hc_value{entity_id="westic1hc"}', fetchStart, capEnd, 300),
+    vmR('sensor.westic1inj_value', fetchStart, capEnd, 300),
+    vmR('sensor.gaz_en_kwh_value{db="home_assistant"}',  fetchStart, capEnd, 300),
+  ]);
+
+  const dHP  = dailyDeltas(vHP,  1000);
+  const dHC  = dailyDeltas(vHC,  1000);
+  const dInj = dailyDeltas(vInj, 1000);
+  const dGas = dailyDeltas(vGas, 1);   // already kWh
+
+  const daysInMonth = new Date(+y, +mo, 0).getDate();
+  const labels = [], hp = [], hc = [], inj = [], gas = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dt = `${y}-${mo}-${String(d).padStart(2, '0')}`;
+    if (dt > today) break;
+    labels.push(d);
+    hp.push(dHP[dt]  ?? null);
+    hc.push(dHC[dt]  ?? null);
+    inj.push(dInj[dt] ?? null);
+    gas.push(dGas[dt] ?? null);
+  }
+
+  const sum = arr => arr.some(v=>v!==null) ? arr.reduce((a,v)=>a+(v??0),0) : null;
+  document.getElementById('m-hp').innerHTML  = fmt(sum(hp))  + '<span class="kvu"> kWh</span>';
+  document.getElementById('m-hc').innerHTML  = fmt(sum(hc))  + '<span class="kvu"> kWh</span>';
+  document.getElementById('m-tot').innerHTML = fmt(sum(hp) === null || sum(hc) === null ? null : sum(hp)+sum(hc)) + '<span class="kvu"> kWh</span>';
+  document.getElementById('m-inj').innerHTML = fmt(sum(inj)) + '<span class="kvu"> kWh</span>';
+  document.getElementById('m-gas').innerHTML = fmt(sum(gas)) + '<span class="kvu"> kWh</span>';
+
+  mkChart('chart-month', 'bar', labels, [
+    { label: 'HP',        data: hp,  backgroundColor: C.hp + 'cc', stack: 'e' },
+    { label: 'HC',        data: hc,  backgroundColor: C.hc + 'cc', stack: 'e' },
+    { label: 'Injection', data: inj, type: 'line', borderColor: C.inj, backgroundColor: C.inj + '20', borderWidth: 2, pointRadius: 2, tension: 0.3, fill: true },
+    { label: 'Gaz',       data: gas, type: 'line', yAxisID: 'yr', borderColor: C.gas, borderWidth: 2, pointRadius: 2, tension: 0.3 },
+  ], {
+    x:  { stacked: true, grid: { color: GC }, ticks: { color: TC, autoSkip: false, maxRotation: 0 } },
+    y:  { stacked: true, grid: { color: GC }, ticks: { color: TC },
+          title: { display: true, text: 'Élec · Injection (kWh)', color: TC, font: { size: 10 } } },
+    yr: { position: 'right', grid: { drawOnChartArea: false },
+          ticks: { color: C.gas }, title: { display: true, text: 'Gaz (kWh)', color: C.gas, font: { size: 10 } } },
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// HISTORY
+// ══════════════════════════════════════════════════════════════════
+let histData = null, histMode = 'monthly', histYear = +localDate().slice(0,4);
+
+document.getElementById('h-monthly').addEventListener('click', () => {
+  histMode = 'monthly';
+  document.getElementById('h-monthly').classList.add('on');
+  document.getElementById('h-annual').classList.remove('on');
+  document.getElementById('h-year-row').style.display = 'flex';
+  renderHist();
+});
+document.getElementById('h-annual').addEventListener('click', () => {
+  histMode = 'annual';
+  document.getElementById('h-annual').classList.add('on');
+  document.getElementById('h-monthly').classList.remove('on');
+  document.getElementById('h-year-row').style.display = 'none';
+  renderHist();
+});
+
+async function loadHistory() {
+
+  const today = nowISO();
+  const [vHPn, vHCn, vBase, vHPo, vHCo, vGas, vInj] = await Promise.all([
+    vmR('sensor.westic1hp_value{entity_id="westic1hp"}', '2019-03-01', today, 86400),
+    vmR('sensor.westic1hc_value{entity_id="westic1hc"}', '2019-03-01', today, 86400),
+    vmR('elec_old_base',  '2016-10-01', '2019-04-30', 86400),
+    vmR('elec_old_hp',    '2010-01-01', '2016-11-30', 86400),
+    vmR('elec_old_hc',    '2010-01-01', '2016-11-30', 86400),
+    vmR('sensor.gaz_en_kwh_value{db="home_assistant"}', '2016-01-01', today, 86400),
+    vmR('sensor.westic1inj_value', '2019-03-01', today, 86400),
+  ]);
+
+  const mHPn  = monthlyDeltas(vHPn,  1000);
+  const mHCn  = monthlyDeltas(vHCn,  1000);
+  const mBase = monthlyDeltas(vBase, 1000);
+  const mHPo  = monthlyDeltas(vHPo,  1000);
+  const mHCo  = monthlyDeltas(vHCo,  1000);
+  const mGas  = monthlyDeltas(vGas,  1);
+  const mInj  = monthlyDeltas(vInj,  1000);
+
+  const rows = [];
+  const d = new Date('2016-01-01T00:00:00Z');
+  const nowM = localDate().slice(0,7);
+  while (d.toISOString().slice(0, 7) <= nowM) {
+    const m = d.toISOString().slice(0, 7);
+    let hp = null, hc = null, base = null;
+    if (m >= '2019-04')      { hp = mHPn[m]  ?? null; hc = mHCn[m]  ?? null; }
+    else if (m >= '2016-11') { base = mBase[m] ?? null; }
+    else                     { hp = mHPo[m]  ?? null; hc = mHCo[m]  ?? null; }
+    rows.push({ m, hp, base, hc, gas: mGas[m] ?? null, inj: mInj[m] ?? null });
+    d.setUTCMonth(d.getUTCMonth() + 1);
+  }
+
+  histData = rows;
+
+  // Build year buttons
+  const years = [...new Set(rows.map(r => r.m.slice(0, 4)))].sort();
+  const yearRow = document.getElementById('h-year-row');
+  yearRow.innerHTML = '';
+  for (const y of years) {
+    const btn = document.createElement('button');
+    btn.className = 'htb' + (parseInt(y) === histYear ? ' on' : '');
+    btn.textContent = y;
+    btn.addEventListener('click', () => {
+      histYear = parseInt(y);
+      yearRow.querySelectorAll('.htb').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      renderHist();
+    });
+    yearRow.appendChild(btn);
+  }
+  // Scroll to current year button
+  const activeBtn = yearRow.querySelector('.htb.on');
+  if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest', inline: 'center' });
+
+  renderHist();
+}
+
+function renderHist() {
+  if (!histData) return;
+
+  if (histMode === 'monthly') {
+    // Build all 12 months for selected year (null for future/missing)
+    const byM = Object.fromEntries(histData.map(r => [r.m, r]));
+    const today = localDate().slice(0,7);
+    const data = [];
+    for (let mo = 1; mo <= 12; mo++) {
+      const key = `${histYear}-${String(mo).padStart(2, '0')}`;
+      if (key > today) { data.push({ m: key, hp: null, hc: null, base: null, gas: null, inj: null }); }
+      else             { data.push(byM[key] ?? { m: key, hp: null, hc: null, base: null, gas: null, inj: null }); }
+    }
+    const lbl = data.map(d => FR_M[parseInt(d.m.slice(5)) - 1].slice(0, 3));
+    mkChart('chart-history', 'bar', lbl, [
+      { label: 'HP',        data: data.map(d => d.hp),   backgroundColor: C.hp   + 'cc', stack: 'e' },
+      { label: 'BASE',      data: data.map(d => d.base), backgroundColor: C.base + 'cc', stack: 'e' },
+      { label: 'HC',        data: data.map(d => d.hc),   backgroundColor: C.hc   + 'cc', stack: 'e' },
+      { label: 'Injection', data: data.map(d => d.inj), type: 'line', borderColor: C.inj, backgroundColor: C.inj + '20', borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: true },
+      { label: 'Gaz',       data: data.map(d => d.gas), type: 'line', yAxisID: 'yr', borderColor: C.gas, borderWidth: 2, pointRadius: 0, tension: 0.3 },
+    ], {
+      x:  { stacked: true, grid: { color: GC }, ticks: { color: TC, maxTicksLimit: 18, maxRotation: 45 } },
+      y:  { stacked: true, grid: { color: GC }, ticks: { color: TC, callback: v => v >= 1000 ? (v/1000)+'k' : v } },
+      yr: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: C.gas, callback: v => v >= 1000 ? (v/1000)+'k' : v } },
+    });
+
+  } else {
+    const byY = {};
+    for (const d of histData) {
+      const y = d.m.slice(0, 4);
+      if (!byY[y]) byY[y] = { hp: null, base: null, hc: null, gas: null, inj: null };
+      if (d.hp !== null) byY[y].hp = (byY[y].hp ?? 0) + d.hp;
+      if (d.base !== null) byY[y].base = (byY[y].base ?? 0) + d.base;
+      if (d.hc !== null) byY[y].hc = (byY[y].hc ?? 0) + d.hc;
+      if (d.gas !== null) byY[y].gas = (byY[y].gas ?? 0) + d.gas;
+      if (d.inj !== null) byY[y].inj = (byY[y].inj ?? 0) + d.inj;
+    }
+    const years = Object.keys(byY).sort();
+    mkChart('chart-history', 'bar', years, [
+      { label: 'HP',        data: years.map(y => byY[y].hp   ?? null), backgroundColor: C.hp   + 'cc', stack: 'e' },
+      { label: 'BASE',      data: years.map(y => byY[y].base ?? null), backgroundColor: C.base + 'cc', stack: 'e' },
+      { label: 'HC',        data: years.map(y => byY[y].hc   ?? null), backgroundColor: C.hc   + 'cc', stack: 'e' },
+      { label: 'Injection', data: years.map(y => byY[y].inj  ?? null), type: 'line', borderColor: C.inj, backgroundColor: C.inj + '20', borderWidth: 2, pointRadius: 4, tension: 0.3, fill: true },
+      { label: 'Gaz',       data: years.map(y => byY[y].gas  ?? null), type: 'line', yAxisID: 'yr', borderColor: C.gas, borderWidth: 2, pointRadius: 4, tension: 0.3 },
+    ], {
+      x:  { stacked: true, grid: { color: GC }, ticks: { color: TC } },
+      y:  { stacked: true, grid: { color: GC }, ticks: { color: TC, callback: v => v >= 1000 ? (v/1000)+'k' : v } },
+      yr: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: C.gas, callback: v => v >= 1000 ? (v/1000)+'k' : v } },
+    });
+  }
+}
+</script>
+</body>
+</html>

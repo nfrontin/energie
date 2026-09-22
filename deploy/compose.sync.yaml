@@ -1,0 +1,18 @@
+services:
+  energie-config-sync:
+    image: ${HA_IMAGE:-homeassistant/home-assistant:latest}
+    pull_policy: never
+    container_name: energie-config-sync
+    restart: unless-stopped
+    entrypoint: [python, -u, /app/sync.py]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    environment:
+      VM_URL: ${VM_URL:-http://10.1.2.20:8428}
+    volumes:
+      - ${HA_CONFIG:-/volume1/docker/homeassistant/config}/.storage:/ha:ro
+      - ${ENERGIE_ROOT:-/volume1/docker/energie}/config-sync/sync.py:/app/sync.py:ro
+      - ${ENERGIE_ROOT:-/volume1/docker/energie}/config-sync/state:/state
+      - ${ENERGIE_ROOT:-/volume1/docker/energie}/html/config:/output

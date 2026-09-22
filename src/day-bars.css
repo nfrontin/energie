@@ -1,0 +1,2 @@
+#vt-design .day-bar-controls{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px}#vt-design .day-bar-plot{height:350px;position:relative}#vt-design .day-bar-note{margin-top:16px;line-height:1.7}#vt-design #pane-today .kpi,#vt-design #pane-day .kpi{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:600px){#vt-design .day-bar-plot{height:310px}#vt-design #pane-today .kpi,#vt-design #pane-day .kpi{grid-template-columns:repeat(2,minmax(0,1fr))}}
