@@ -995,6 +995,7 @@ function detailChart(id,labels,datasets){
  charts[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{color:TC,usePointStyle:true,boxWidth:8,padding:14}},tooltip:{callbacks:{label:c=>c.dataset.label+' : '+fmt(c.parsed.y,3)+' kWh'}}},scales:{x:{stacked:true,grid:{display:false},ticks:{color:TC,maxTicksLimit:12,maxRotation:0}},y:{stacked:true,beginAtZero:true,title:{display:true,text:'kWh',color:TC},grid:{color:GC},ticks:{color:TC}}}}});
 }
 function renderDetail(a,p,t,day,prev,end,costs){
+ dailyFlowTotals=t;
  const partial=day===localDate();
  document.getElementById('detail-caption').textContent=new Date(day+'T12:00:00Z').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+(partial?' · en cours, jusqu’à '+new Date(end*1000).toLocaleTimeString('fr-FR',{timeZone:HOME_TZ,hour:'2-digit',minute:'2-digit'}):' · journée complète');
  const cost=costs.length&&costs.every(c=>c.cost!==null)?costs.reduce((sum,c)=>sum+c.cost,0):null;
@@ -1036,9 +1037,9 @@ const POWER_SOURCES=[{"energy": "ar_cui_cave_vin_energie", "power": "ar_cui_cave
 ;
 let nowPending=false,lastNow=0,nowDevices=[];
 function powerWatts(s){if(!s)return null;const n=Number(s.value?.[1]),unit=s.metric?.unit_of_measurement;if(!Number.isFinite(n)||n<0||!['W','kW'].includes(unit))return null;return n*(unit==='kW'?1000:1);}
-function powerLayout(rows){
+function powerLayout(rows,scaleTotal=null){
  const groups=new Map();for(const d of rows.filter(d=>d.watts>0)){if(!groups.has(d.area))groups.set(d.area,{name:d.area,total:0,devices:[]});const g=groups.get(d.area);g.total+=d.watts;g.devices.push(d);}
- const ordered=[...groups.values()].sort((a,b)=>b.total-a.total),total=ordered.reduce((n,g)=>n+g.total,0),scale=total?390/total:0;
+ const ordered=[...groups.values()].sort((a,b)=>b.total-a.total),total=ordered.reduce((n,g)=>n+g.total,0),scale=Math.max(total,scaleTotal||0)>0?390/Math.max(total,scaleTotal||0):0;
  let y=50;for(const g of ordered){g.devices.sort((a,b)=>b.watts-a.watts);const top=y;for(const d of g.devices){d.height=d.watts*scale;d.y=y+Math.max(0,(25-d.height)/2);y+=Math.max(25,d.height)+9;}g.height=g.total*scale;g.y=top+(y-9-top-g.height)/2;y+=24;}
  const height=Math.max(430,y+15),rootHeight=total*scale,rootY=(height-rootHeight)/2;return {groups:ordered,total,scale,height,rootHeight,rootY};
 }
@@ -1081,15 +1082,17 @@ document.getElementById('now-diagram').addEventListener('keydown',e=>{if(e.key==
 
 // Initial view opens after daily flow initialization.
 
-let dailyFlowReady=false;
-function clearDailyFlow(){dailyFlowReady=false;document.getElementById('daily-flow-diagram').innerHTML='<p class="vt-caption">Chargement de la journée…</p>';document.getElementById('daily-flow-caption').textContent='Consommation des appareils suivis · kWh';for(const id of ['daily-flow-total','daily-flow-count','daily-flow-leader'])document.getElementById(id).textContent='—';}
+let dailyFlowReady=false,dailyFlowTotals=null;
+function clearDailyFlow(){dailyFlowReady=false;dailyFlowTotals=null;document.getElementById('daily-flow-diagram').innerHTML='<p class="vt-caption">Chargement de la journée…</p>';document.getElementById('daily-flow-caption').textContent='Consommation des appareils suivis · kWh';for(const id of ['daily-flow-total','daily-flow-count','daily-flow-leader'])document.getElementById(id).textContent='—';}
 function renderDailyFlow(){
  dailyFlowReady=true;
  const area=document.getElementById('daily-flow-area').value;
  const rows=detailRows.map(d=>({...d,area:POWER_SOURCES.find(s=>s.energy===d.id)?.area||'Sans pièce attribuée',watts:d.total})).filter(d=>!area||d.area===area),known=rows.filter(d=>d.watts!==null),layout=powerLayout(rows.map(d=>({...d}))),leader=[...known].filter(d=>d.watts>0).sort((a,b)=>b.watts-a.watts)[0];
  document.getElementById('daily-flow-caption').textContent=document.getElementById('detail-caption').textContent+' · kWh';
  document.getElementById('daily-flow-total').textContent=fmt(known.length?layout.total:null,3)+' kWh';document.getElementById('daily-flow-count').textContent=known.length+' / '+rows.length;document.getElementById('daily-flow-leader').textContent=leader?leader.name+' · '+fmt(leader.watts,3)+' kWh':known.length?'Aucune consommation':'—';
- document.getElementById('daily-flow-diagram').innerHTML=layout.total?renderFlowSVG(layout,'kWh','data-daily-area'):'<p class="vt-sub">'+(known.length?'Aucune consommation positive mesurée pour cette sélection.':'Données insuffisantes pour cette journée et cette sélection.')+'</p>';
+ const sourceModel=!area?dailySourceModel(rows,dailyFlowTotals):null;
+ document.getElementById('daily-source-note').textContent=area?'Vue filtrée : les sources ne sont pas attribuées à une pièce particulière.':sourceModel?'Réseau et solaire alimentent la maison ; le surplus solaire repart vers le réseau. Non réparti : différence entre le total maison et les appareils suivis, y compris les relevés manquants.':"Le bilan global est incomplet ou les appareils dépassent le total maison : seules leurs consommations sont représentées.";
+ document.getElementById('daily-flow-diagram').innerHTML=sourceModel?renderDailySourceFlow(sourceModel):layout.total?renderFlowSVG(layout,'kWh','data-daily-area'):'<p class="vt-sub">'+(known.length?'Aucune consommation positive mesurée pour cette sélection.':'Données insuffisantes pour cette journée et cette sélection.')+'</p>';
 }
 const dailyFlowArea=document.getElementById('daily-flow-area');
 for(const area of [...new Set(POWER_SOURCES.map(d=>d.area))].sort((a,b)=>a.localeCompare(b,'fr'))){const opt=document.createElement('option');opt.value=area;opt.textContent=area;dailyFlowArea.append(opt);}
@@ -1098,6 +1101,42 @@ function selectDailyFlowArea(e){const g=e.target.closest('[data-daily-area]');if
 document.getElementById('daily-flow-diagram').addEventListener('click',selectDailyFlowArea);
 document.getElementById('daily-flow-diagram').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectDailyFlowArea(e);}});
 // Configuration sync opens the initial view.
+
+// Reconcile the measured house balance before linking sources to appliances.
+function dailySourceModel(rows,t){
+ if(!t||['house','solar','imported','inj','self'].some(k=>!Number.isFinite(t[k])||t[k]<0))return null;
+ const known=rows.filter(d=>Number.isFinite(d.watts)&&d.watts>=0),measured=known.reduce((sum,d)=>sum+d.watts,0);
+ if(measured>t.house+0.000001||Math.abs(t.imported+t.self-t.house)>.001||Math.abs(t.self+t.inj-t.solar)>.001)return null;
+ const result=known.map(d=>({...d})),untracked=Math.max(0,t.house-measured);
+ if(untracked>0)result.push({area:'Non réparti',name:'Consommation non suivie',watts:untracked,untracked:true});
+ return {rows:result,untracked,measured,totals:t};
+}
+function renderDailySourceFlow(model){
+ const t=model.totals,layout=powerLayout(model.rows,t.solar+t.imported),{groups,scale,height,rootY,rootHeight}=layout;
+ if(!scale)return '<p class="vt-sub">Aucune consommation à répartir.</p>';
+ const palette=energyPalette(),areas=[...new Set(POWER_SOURCES.map(d=>d.area))].sort();let defs='',links='',nodes='',seq=0;
+ const label=(x,y,name,value,anchor='start')=>'<text class="flow-label" x="'+x+'" y="'+y+'" text-anchor="'+anchor+'">'+escapeHTML(name)+'</text><text class="flow-value" x="'+x+'" y="'+(y+19)+'" text-anchor="'+anchor+'">'+fmt(value,3)+' kWh</text>';
+ const rect=(x,y,h,color)=>h>0?'<rect x="'+x+'" y="'+y+'" width="12" height="'+h+'" fill="'+color+'"/>':'';
+ const ribbon=(x1,y1,x2,y2,h,from,to,title)=>{if(h<=0)return '';const id='daily-source-gradient-'+seq++;defs+='<linearGradient id="'+id+'"><stop stop-color="'+from+'"/><stop offset="1" stop-color="'+to+'"/></linearGradient>';return '<path class="flow-link" tabindex="0" aria-label="'+escapeHTML(title)+'" fill="url(#'+id+')" d="M'+x1+','+y1+' C'+((x1+x2)/2)+','+y1+' '+((x1+x2)/2)+','+y2+' '+x2+','+y2+' L'+x2+','+(y2+h)+' C'+((x1+x2)/2)+','+(y2+h)+' '+((x1+x2)/2)+','+(y1+h)+' '+x1+','+(y1+h)+' Z"><title>'+escapeHTML(title)+'</title></path>';};
+ const houseX=325,areaX=670,deviceX=995,gridHeight=t.imported*scale,solarHeight=t.solar*scale,injHeight=t.inj*scale;
+ const sourceTop=Math.max(55,(height-gridHeight-solarHeight-65)/2),gridY=sourceTop,solarY=gridY+gridHeight+65;
+ const exportY=Math.max(rootY+rootHeight+55,solarY+t.self*scale),fullHeight=Math.max(height,exportY+injHeight+65);
+ links+=ribbon(45,gridY,houseX,rootY,gridHeight,C.hc,C.hc,'Réseau → maison : '+fmt(t.imported,3)+' kWh');
+ links+=ribbon(45,solarY,houseX,rootY+gridHeight,t.self*scale,C.sol,C.hc,'Solaire → maison : '+fmt(t.self,3)+' kWh');
+ links+=ribbon(45,solarY+t.self*scale,houseX,exportY,injHeight,C.sol,C.inj,'Solaire → réseau : '+fmt(t.inj,3)+' kWh');
+ nodes+=rect(33,gridY,gridHeight,C.hc)+label(52,gridY-28,'Réseau acheté',t.imported);
+ nodes+=rect(33,solarY,solarHeight,C.sol)+label(52,solarY-28,'Production solaire',t.solar);
+ nodes+=rect(houseX,rootY,rootHeight,C.hc)+label(houseX+20,rootY-28,'Maison',t.house);
+ if(t.inj>0)nodes+=rect(houseX,exportY,injHeight,C.inj)+label(houseX+20,exportY+injHeight/2-3,'Injection réseau',t.inj);
+ let rootOffset=rootY;
+ const colorForDevice=d=>{let hash=0;for(const c of (d.id||d.name))hash=(hash*31+c.charCodeAt(0))>>>0;return palette[hash%palette.length];};
+ for(const g of groups){const unknown=g.devices.every(d=>d.untracked),areaColor=unknown?'#87949f':palette[Math.max(0,areas.indexOf(g.name))%palette.length];
+ links+=ribbon(houseX+12,rootOffset,areaX,g.y,g.height,C.hc,areaColor,'Maison → '+g.name+' : '+fmt(g.total,3)+' kWh');rootOffset+=g.height;
+ nodes+='<g '+(unknown?'':'data-daily-area="'+escapeHTML(g.name)+'" tabindex="0" role="button" aria-label="Afficher '+escapeHTML(g.name)+'"')+'>'+rect(areaX,g.y,g.height,areaColor)+label(areaX-10,g.y+g.height/2-5,g.name,g.total,'end')+'</g>';
+ let offset=g.y;for(const d of g.devices){const color=d.untracked?'#87949f':colorForDevice(d);links+=ribbon(areaX+12,offset,deviceX,d.y,d.height,areaColor,color,g.name+' → '+d.name+' : '+fmt(d.watts,3)+' kWh');offset+=d.height;nodes+=rect(deviceX,d.y,d.height,color)+'<g><title>'+escapeHTML(d.name)+'</title><text x="'+(deviceX+22)+'" y="'+(d.y+d.height/2+5)+'">'+escapeHTML(d.name.length>32?d.name.slice(0,31)+'…':d.name)+'</text><text class="flow-value" x="1390" y="'+(d.y+d.height/2+5)+'" text-anchor="end">'+fmt(d.watts,3)+' kWh</text></g>';}
+ }
+ return '<svg class="source-flow-svg" viewBox="0 0 1410 '+fullHeight+'" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Flux quotidiens du réseau et du solaire vers la maison, les pièces et les appareils"><defs>'+defs+'</defs><text class="flow-value" x="33" y="20">Sources</text><text class="flow-value" x="325" y="20">Destination</text><text class="flow-value" x="660" y="20" text-anchor="end">Pièces</text><text class="flow-value" x="1017" y="20">Appareils</text>'+links+nodes+'</svg>';
+}
 
 const dayBarsState={today:{step:3600,revision:0},day:{step:3600,revision:0}};
 async function loadToday(){return loadDayBars('today',localDate());}

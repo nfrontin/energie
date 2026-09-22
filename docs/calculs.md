@@ -42,3 +42,9 @@ Les anciennes archives, avant le 22 avril 2026 dans les vues Jour, gardent leur 
 ## Eau
 
 Différence des index entre minuit et minuit à Paris, en litres, sur 30 jours. Les remises à zéro ou bornes manquantes restent inconnues. Le compteur général et les sous-compteurs ne sont pas additionnés.
+
+## Sources du diagramme quotidien
+
+La vue globale relie le réseau et la production solaire à la maison ; l’injection solaire constitue une branche distincte. L’écart positif entre consommation maison et appareils suivis apparaît comme « Consommation non suivie ». Il peut inclure des appareils non équipés et des relevés manquants ; ce n’est pas une mesure indépendante.
+
+Si les appareils dépassent le total maison ou si le bilan global est incomplet, le diagramme revient aux seuls appareils suivis avec une explication. Lorsqu’une pièce est filtrée, les sources sont masquées : leur part réelle par pièce n’est pas mesurée. Les dégradés identifient les origines et destinations des liens ; les couleurs des appareils restent stables à travers les rafraîchissements.

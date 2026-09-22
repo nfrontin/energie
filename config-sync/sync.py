@@ -28,7 +28,12 @@ def build_config():
     conf=read('energy');entities={x['entity_id']:x for x in read('core.entity_registry')['entities']};devices={x['id']:x for x in read('core.device_registry')['devices']};areas={x['id']:x['name'] for x in read('core.area_registry')['areas']}
     def name(entity,fallback):
         e=entities.get(entity,{})
-        return e.get('name') or e.get('original_name') or fallback
+        if e.get('name'):return e['name']
+        original=e.get('original_name') or fallback
+        device=devices.get(e.get('device_id'),{})
+        prefix=device.get('name_by_user') or device.get('name')
+        if e.get('has_entity_name') and prefix:return prefix+' '+original
+        return original
     out=[]
     for d in conf.get('device_consumption',[]):
         entity=d.get('stat_consumption');eid=sensor_id(entity)

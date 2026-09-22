@@ -54,6 +54,7 @@ function detailChart(id,labels,datasets){
  charts[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{color:TC,usePointStyle:true,boxWidth:8,padding:14}},tooltip:{callbacks:{label:c=>c.dataset.label+' : '+fmt(c.parsed.y,3)+' kWh'}}},scales:{x:{stacked:true,grid:{display:false},ticks:{color:TC,maxTicksLimit:12,maxRotation:0}},y:{stacked:true,beginAtZero:true,title:{display:true,text:'kWh',color:TC},grid:{color:GC},ticks:{color:TC}}}}});
 }
 function renderDetail(a,p,t,day,prev,end,costs){
+ dailyFlowTotals=t;
  const partial=day===localDate();
  document.getElementById('detail-caption').textContent=new Date(day+'T12:00:00Z').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+(partial?' · en cours, jusqu’à '+new Date(end*1000).toLocaleTimeString('fr-FR',{timeZone:HOME_TZ,hour:'2-digit',minute:'2-digit'}):' · journée complète');
  const cost=costs.length&&costs.every(c=>c.cost!==null)?costs.reduce((sum,c)=>sum+c.cost,0):null;

@@ -39,7 +39,7 @@ js=js.replace('async function loadMonth() {','async function loadMonth() {\n  co
 js=js.replace('  const dHP  = dailyDeltas', '  if(requestedMonth!==curMonth)return;\n  const dHP  = dailyDeltas')
 # Clock in the location's timezone, not the visiting browser's timezone.
 js=js.replace("{ hour: '2-digit', minute: '2-digit', second: '2-digit' }", "{timeZone:HOME_TZ,hour:'2-digit',minute:'2-digit',second:'2-digit'}")
-js+='\n'+Path('src/new-runtime.js').read_text()+'\n'+Path('src/detail-config.js').read_text()+'\n'+Path('src/detail-runtime.js').read_text()+'\nconst POWER_SOURCES='+Path('src/power-sources.json').read_text()+';\n'+Path('src/now-runtime.js').read_text()+'\n'+Path('src/daily-flow-runtime.js').read_text()+'\n'+Path('src/day-bars.js').read_text()+'\n'+Path('src/dynamic-config.js').read_text()
+js+='\n'+Path('src/new-runtime.js').read_text()+'\n'+Path('src/detail-config.js').read_text()+'\n'+Path('src/detail-runtime.js').read_text()+'\nconst POWER_SOURCES='+Path('src/power-sources.json').read_text()+';\n'+Path('src/now-runtime.js').read_text()+'\n'+Path('src/daily-flow-runtime.js').read_text()+'\n'+Path('src/daily-source-flow.js').read_text()+'\n'+Path('src/day-bars.js').read_text()+'\n'+Path('src/dynamic-config.js').read_text()
 js=js.replace('async function loadToday() {','async function legacyLoadToday() {').replace('async function loadDay() {','async function legacyLoadDay() {')
 js=Path('src/themes.js').read_text()+'\n'+js+'\n'+Path('src/theme-controls.js').read_text()
 js=js.replace("const C = {hp:'#d69b4d',hc:'#5b7f92',gas:'#b47453',sol:'#668b52',inj:'#418576',base:'#847199'};","const C = {...ENERGY_THEMES[activeTheme].colors};")

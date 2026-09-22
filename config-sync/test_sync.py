@@ -16,6 +16,8 @@ class SyncTests(unittest.TestCase):
   m.sync_once();p=m.OUTPUT/'energy-config.json';before=p.read_bytes();(m.INPUT/'energy').write_text('{broken')
   with self.assertRaises(json.JSONDecodeError):m.sync_once()
   self.assertEqual(p.read_bytes(),before)
+ def test_device_prefixed_entity_name(self):
+  self.write('core.entity_registry',{'entities':[{'entity_id':'sensor.socket_energy','device_id':'dev','original_name':'Énergie','has_entity_name':True},{'entity_id':'sensor.socket_power','device_id':'dev'}]});self.write('core.device_registry',{'devices':[{'id':'dev','area_id':'room','name':'Smart Plug','name_by_user':'Réfrigérateur'}]});m.sync_once();d=json.loads((m.OUTPUT/'energy-config.json').read_text());self.assertEqual(d['devices'][0]['name'],'Réfrigérateur')
  def test_removal_rename_area(self):
   self.conf['device_consumption'][0]['name']='Nouveau nom';self.write('energy',self.conf);self.write('core.area_registry',{'areas':[{'id':'room','name':'Bureau'}]});m.sync_once();d=json.loads((m.OUTPUT/'energy-config.json').read_text());self.assertEqual(d['devices'][0]['name'],'Nouveau nom');self.assertEqual(d['devices'][0]['area'],'Bureau');self.conf['device_consumption']=[];self.write('energy',self.conf);m.sync_once();self.assertEqual(json.loads((m.OUTPUT/'energy-config.json').read_text())['devices'],[])
 if __name__=='__main__':unittest.main()

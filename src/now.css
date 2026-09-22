@@ -2,3 +2,5 @@
 @media(max-width:850px){#vt-design .now-mobile-note{display:block;margin-top:16px}#vt-design .now-summary{gap:10px}#vt-design .now-summary strong{font-size:20px}}
 @media(prefers-reduced-motion:reduce){#vt-design .flow-link{transition:none}}
 #vt-design .now-summary #daily-flow-leader{font-size:17px}#vt-design .now-diagram [data-daily-area]{cursor:pointer}#vt-design .now-diagram [data-daily-area]:focus{outline:2px solid var(--sol);outline-offset:5px}
+
+#vt-design .now-diagram .source-flow-svg{min-width:1180px}#vt-design .now-diagram .source-flow-svg text{font-size:15px}#vt-design .now-diagram .source-flow-svg .flow-value{font-size:13px}

@@ -1,8 +1,8 @@
 let nowPending=false,lastNow=0,nowDevices=[];
 function powerWatts(s){if(!s)return null;const n=Number(s.value?.[1]),unit=s.metric?.unit_of_measurement;if(!Number.isFinite(n)||n<0||!['W','kW'].includes(unit))return null;return n*(unit==='kW'?1000:1);}
-function powerLayout(rows){
+function powerLayout(rows,scaleTotal=null){
  const groups=new Map();for(const d of rows.filter(d=>d.watts>0)){if(!groups.has(d.area))groups.set(d.area,{name:d.area,total:0,devices:[]});const g=groups.get(d.area);g.total+=d.watts;g.devices.push(d);}
- const ordered=[...groups.values()].sort((a,b)=>b.total-a.total),total=ordered.reduce((n,g)=>n+g.total,0),scale=total?390/total:0;
+ const ordered=[...groups.values()].sort((a,b)=>b.total-a.total),total=ordered.reduce((n,g)=>n+g.total,0),scale=Math.max(total,scaleTotal||0)>0?390/Math.max(total,scaleTotal||0):0;
  let y=50;for(const g of ordered){g.devices.sort((a,b)=>b.watts-a.watts);const top=y;for(const d of g.devices){d.height=d.watts*scale;d.y=y+Math.max(0,(25-d.height)/2);y+=Math.max(25,d.height)+9;}g.height=g.total*scale;g.y=top+(y-9-top-g.height)/2;y+=24;}
  const height=Math.max(430,y+15),rootHeight=total*scale,rootY=(height-rootHeight)/2;return {groups:ordered,total,scale,height,rootHeight,rootY};
 }
