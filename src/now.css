@@ -4,3 +4,5 @@
 #vt-design .now-summary #daily-flow-leader{font-size:17px}#vt-design .now-diagram [data-daily-area]{cursor:pointer}#vt-design .now-diagram [data-daily-area]:focus{outline:2px solid var(--sol);outline-offset:5px}
 
 #vt-design .now-diagram .source-flow-svg{min-width:1180px}#vt-design .now-diagram .source-flow-svg text{font-size:15px}#vt-design .now-diagram .source-flow-svg .flow-value{font-size:13px}
+
+#vt-design .now-diagram svg.source-flow-compact{width:610px;min-width:610px;max-height:550px;margin-bottom:24px}

@@ -1039,7 +1039,7 @@ document.getElementById('detail-compare').addEventListener('change',e=>{for(cons
 
 const POWER_SOURCES=[{"energy": "ar_cui_cave_vin_energie", "power": "ar_cui_cave_vin_puissance", "area": "Arrière-Cuisine"}, {"energy": "smart_plug_mini_energie_20", "power": "smart_plug_mini_puissance_20", "area": "Arrière-Cuisine"}, {"energy": "ar_cui_m_cafe_energie", "power": "ar_cui_m_cafe_puissance", "area": "Arrière-Cuisine"}, {"energy": "ar_cui_pr_congel_energie", "power": "ar_cui_pr_congel_puissance", "area": "Arrière-Cuisine"}, {"energy": "ar_cui_pr_robot_petrin_ml_energie", "power": "ar_cui_pr_robot_petrin_ml_puissance", "area": "Arrière-Cuisine"}, {"energy": "shelly_1pm_mini_gen4_energie_10", "power": "shelly_1pm_mini_gen4_puissance_10", "area": "Bureau"}, {"energy": "bur_pr_hifi_energie", "power": "bur_pr_hifi_puissance", "area": "Bureau"}, {"energy": "bur_pr_info_energie", "power": "bur_pr_info_puissance", "area": "Bureau"}, {"energy": "shelly_1pm_mini_gen4_energie_11", "power": "shelly_1pm_mini_gen4_puissance_11", "area": "Chambre Alex"}, {"energy": "ch_par_pr_droite_lit_energie", "power": "ch_par_pr_droite_lit_puissance", "area": "Chambre Parents"}, {"energy": "shelly_1pm_mini_gen4_energie_12", "power": "shelly_1pm_mini_gen4_puissance_12", "area": "Chambre Valentine"}, {"energy": "shelly_1pm_mini_gen4_energie_14", "power": "shelly_1pm_mini_gen4_puissance_14", "area": "Cuisine"}, {"energy": "shelly_1pm_mini_gen4_energie_13", "power": "shelly_1pm_mini_gen4_puissance_13", "area": "Cuisine"}, {"energy": "cui_pr_dyson_energie", "power": "cui_pr_dyson_puissance", "area": "Cuisine"}, {"energy": "cui_pr_frigo_energie", "power": "cui_pr_frigo_puissance", "area": "Cuisine"}, {"energy": "cui_pr_gp_bouil_energie", "power": "cui_pr_gp_bouil_puissance", "area": "Cuisine"}, {"energy": "cui_pr_rice_cooker_energie", "power": "cui_pr_rice_cooker_puissance", "area": "Cuisine"}, {"energy": "cui_pr_lv_energie", "power": "cui_pr_lv_puissance", "area": "Cuisine"}, {"energy": "cui_pr_micro_onde_energie", "power": "cui_pr_micro_onde_puissance", "area": "Cuisine"}, {"energy": "etg_bur_pr_tv_energie", "power": "etg_bur_pr_tv_puissance", "area": "Bureau Etage"}, {"energy": "eth_sdb_pr_radiateur_energie", "power": "eth_sdb_pr_radiateur_puissance", "area": "Salle de Bain Etage"}, {"energy": "gar_pr_chargeurs_energie_2", "power": "gar_pr_chargeurs_puissance_2", "area": "Garage"}, {"energy": "gar_pr_chaudiere_energie", "power": "gar_pr_chaudiere_puissance", "area": "Garage"}, {"energy": "gar_pr_chauffe_eau_energie", "power": "gar_pr_chauffe_eau_puissance", "area": "Garage"}, {"energy": "gar_pr_evier1_energie", "power": "gar_pr_evier1_puissance", "area": "Garage"}, {"energy": "gar_pr_evier2_energie", "power": "gar_pr_evier2_puissance", "area": "Garage"}, {"energy": "gar_pr_info_energie", "power": "gar_pr_info_puissance", "area": "Garage"}, {"energy": "gar_pr_pompe_drain_energie", "power": "gar_pr_pompe_drain_puissance", "area": "Garage"}, {"energy": "gar_pr_pompe_relevage_energie", "power": "gar_pr_pompe_relevage_puissance", "area": "Garage"}, {"energy": "smart_energy_monitor_consumption_1", "power": "smart_energy_monitor_power_1", "area": "Garage"}, {"energy": "shelly_1pm_mini_gen4_energie_17", "power": "shelly_1pm_mini_gen4_puissance_17", "area": "Salon"}, {"energy": "sal_pr_hifi_energie", "power": "sal_pr_hifi_puissance", "area": "Salon"}, {"energy": "sal_pr_tv_energie", "power": "sal_pr_tv_puissance", "area": "Salon"}, {"energy": "smart_energy_monitor_consumption_4", "power": "smart_energy_monitor_power_4", "area": "Garage"}, {"energy": "smart_energy_monitor_25032457422352740703c4e7ae152176_consumption_1", "power": "smart_energy_monitor_25032457422352740703c4e7ae152176_power_1", "area": "Garage"}, {"energy": "smart_energy_monitor_25032457422352740703c4e7ae152176_consumption_2", "power": "smart_energy_monitor_25032457422352740703c4e7ae152176_power_2", "area": "Garage"}, {"energy": "smart_energy_monitor_25032457422352740703c4e7ae152176_consumption_4", "power": "smart_energy_monitor_25032457422352740703c4e7ae152176_power_4", "area": "Garage"}, {"energy": "smart_energy_monitor_consumption_2", "power": "smart_energy_monitor_power_2", "area": "Garage"}, {"energy": "smart_plug_mini_energie_25", "power": "smart_plug_mini_puissance_25", "area": "Garage"}]
 ;
-let nowPending=false,lastNow=0,nowDevices=[];
+let nowPending=false,lastNow=0,nowDevices=[],nowSourceTotals=null;
 function powerWatts(s){if(!s)return null;const n=Number(s.value?.[1]),unit=s.metric?.unit_of_measurement;if(!Number.isFinite(n)||n<0||!['W','kW'].includes(unit))return null;return n*(unit==='kW'?1000:1);}
 function powerLayout(rows,scaleTotal=null){
  const groups=new Map();for(const d of rows.filter(d=>d.watts>0)){if(!groups.has(d.area))groups.set(d.area,{name:d.area,total:0,devices:[]});const g=groups.get(d.area);g.total+=d.watts;g.devices.push(d);}
@@ -1047,24 +1047,34 @@ function powerLayout(rows,scaleTotal=null){
  let y=50;for(const g of ordered){g.devices.sort((a,b)=>b.watts-a.watts);const top=y;for(const d of g.devices){d.height=d.watts*scale;d.y=y+Math.max(0,(25-d.height)/2);y+=Math.max(25,d.height)+9;}g.height=g.total*scale;g.y=top+(y-9-top-g.height)/2;y+=24;}
  const height=Math.max(430,y+15),rootHeight=total*scale,rootY=(height-rootHeight)/2;return {groups:ordered,total,scale,height,rootHeight,rootY};
 }
+function nowEnergyBalance(envoy){
+ if(!envoy||!Number.isFinite(envoy.wattsNow)||!Number.isFinite(envoy.gridActiveW)||envoy.wattsNow<0)return null;
+ const solar=envoy.wattsNow,grid=envoy.gridActiveW,house=solar+grid,imported=Math.max(0,grid),inj=Math.max(0,-grid),self=solar-inj;
+ if(house<0||self<0)return null;
+ return {solar,house,imported,inj,self};
+}
 async function loadNow(){
  if(nowPending)return;nowPending=true;
  try{
  const names=POWER_SOURCES.filter(d=>d.power).map(d=>'sensor\\.'+d.power+'_value').join('|');
  const query='last_over_time({db="home_assistant",__name__=~"'+names.replaceAll('\\','\\\\')+'"}[30d])';
- if(!names){nowDevices=[];renderNow();return;}
- const result=await getJSON('/vm/api/v1/query?'+new URLSearchParams({query}));
+ const [result,envoy]=await Promise.all([names?getJSON('/vm/api/v1/query?'+new URLSearchParams({query})):Promise.resolve({data:{result:[]}}),fetchEnvoy()]);
+ nowSourceTotals=nowEnergyBalance(envoy);
  const byId=new Map((result.data.result||[]).map(s=>[s.metric.entity_id,s]));
  nowDevices=POWER_SOURCES.map(s=>({...s,name:DETAIL_DEVICES.find(d=>d.id===s.energy)?.name||s.power,watts:powerWatts(byId.get(s.power))}));
  renderNow();lastNow=Date.now();document.getElementById('now-caption').textContent='Puissances actives · relevées à '+new Date().toLocaleTimeString('fr-FR',{timeZone:HOME_TZ,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · '+nowDevices.filter(d=>d.watts!==null).length+'/'+nowDevices.length+' capteurs disponibles';reportRequest('vue-now',false);reportRequest('now',false);
- }catch(e){nowDevices=[];renderNow();document.getElementById('now-caption').textContent='Puissances indisponibles. Réessayez en sélectionnant Maintenant.';throw e;}finally{nowPending=false;}
+ }catch(e){nowDevices=[];nowSourceTotals=null;renderNow();document.getElementById('now-caption').textContent='Puissances indisponibles. Réessayez en sélectionnant Maintenant.';throw e;}finally{nowPending=false;}
 }
 function renderNow(){
  const area=document.getElementById('now-area').value,rows=nowDevices.filter(d=>!area||d.area===area),known=rows.filter(d=>d.watts!==null),layout=powerLayout(rows.map(d=>({...d}))),leader=known.filter(d=>d.watts>0).sort((a,b)=>b.watts-a.watts)[0];
  document.getElementById('now-total').textContent=fmt(known.length?layout.total:null,0)+' W';document.getElementById('now-count').textContent=known.filter(d=>d.watts>0).length+' / '+rows.length;document.getElementById('now-leader').textContent=leader?leader.name+' · '+fmt(leader.watts,0)+' W':known.length?'Aucun appareil actif':'—';
  document.getElementById('now-rows').innerHTML=[...rows].sort((a,b)=>a.area.localeCompare(b.area,'fr')||(b.watts??-1)-(a.watts??-1)).map(d=>'<tr><th scope="row">'+escapeHTML(d.area)+'</th><td>'+escapeHTML(d.name)+'</td><td>'+fmt(d.watts,1)+' W</td></tr>').join('');
- if(!layout.total){document.getElementById('now-diagram').innerHTML='<p class="vt-sub">'+(known.length?'Aucune puissance positive mesurée pour cette sélection.':'Aucune puissance disponible pour cette sélection.')+'</p>';return;}
- document.getElementById('now-diagram').innerHTML=renderFlowSVG(layout,'W','data-now-area');
+ const model=!area?dailySourceModel(rows,nowSourceTotals):null;
+ const fallback=layout.total?renderFlowSVG(layout,'W','data-now-area'):'<p class="vt-sub">'+(known.length?'Aucune puissance positive mesurée pour cette sélection.':'Aucune puissance disponible pour cette sélection.')+'</p>';
+ const sources=nowSourceTotals?dailySourceModel([],nowSourceTotals):null;
+ document.getElementById('now-source-note').textContent=model?'Le solaire alimente la maison ; le surplus est injecté au réseau. Non réparti : puissance maison non attribuée aux appareils suivis.':sources?(area?'Les sources représentent toute la maison ; les appareils ci-dessous sont filtrés par pièce.':'Sources maison et appareils sont représentés séparément : les relevés des appareils dépassent le total maison (décalage des mesures ou circuits qui se recoupent).'):'Sources solaire et réseau indisponibles : seuls les appareils sont représentés.';
+ document.getElementById('now-diagram').innerHTML=model?renderEnergySourceFlow(model,{unit:'W',areaAttribute:'data-now-area',prefix:'now-source'}):(sources?renderEnergySourceFlow(sources,{unit:'W',prefix:'now-source',sourceOnly:true}):'')+fallback;
+
 }
 function renderFlowSVG(layout,unit,areaAttribute){
  const digits=unit==='kWh'?3:1;
@@ -1115,31 +1125,34 @@ function dailySourceModel(rows,t){
  if(untracked>0)result.push({area:'Non réparti',name:'Consommation non suivie',watts:untracked,untracked:true});
  return {rows:result,untracked,measured,totals:t};
 }
-function renderDailySourceFlow(model){
- const t=model.totals,layout=powerLayout(model.rows,t.solar+t.imported),{groups,scale,height,rootHeight}=layout,rootY=80;
+function renderDailySourceFlow(model){return renderEnergySourceFlow(model);}
+function renderEnergySourceFlow(model,{unit="kWh",areaAttribute="data-daily-area",prefix="daily-source",sourceOnly=false}={}){
+ const digits=unit==="W"?0:3;
+ const t=model.totals,layout=powerLayout(model.rows,t.solar+t.imported),{groups,scale,height}=layout,rootHeight=t.house*scale,rootY=80;
  if(!scale)return '<p class="vt-sub">Aucune consommation à répartir.</p>';
  const palette=energyPalette(),areas=[...new Set(POWER_SOURCES.map(d=>d.area))].sort();let defs='',links='',nodes='',seq=0;
- const label=(x,y,name,value,anchor='start')=>'<text class="flow-label" x="'+x+'" y="'+y+'" text-anchor="'+anchor+'">'+escapeHTML(name)+'</text><text class="flow-value" x="'+x+'" y="'+(y+19)+'" text-anchor="'+anchor+'">'+fmt(value,3)+' kWh</text>';
+ const label=(x,y,name,value,anchor='start')=>'<text class="flow-label" x="'+x+'" y="'+y+'" text-anchor="'+anchor+'">'+escapeHTML(name)+'</text><text class="flow-value" x="'+x+'" y="'+(y+19)+'" text-anchor="'+anchor+'">'+fmt(value,digits)+' '+unit+'</text>';
  const rect=(x,y,h,color)=>h>0?'<rect x="'+x+'" y="'+y+'" width="12" height="'+h+'" fill="'+color+'"/>':'';
- const ribbon=(x1,y1,x2,y2,h,from,to,title)=>{if(h<=0)return '';const id='daily-source-gradient-'+seq++;defs+='<linearGradient id="'+id+'"><stop stop-color="'+from+'"/><stop offset="1" stop-color="'+to+'"/></linearGradient>';return '<path class="flow-link" tabindex="0" aria-label="'+escapeHTML(title)+'" fill="url(#'+id+')" d="M'+x1+','+y1+' C'+((x1+x2)/2)+','+y1+' '+((x1+x2)/2)+','+y2+' '+x2+','+y2+' L'+x2+','+(y2+h)+' C'+((x1+x2)/2)+','+(y2+h)+' '+((x1+x2)/2)+','+(y1+h)+' '+x1+','+(y1+h)+' Z"><title>'+escapeHTML(title)+'</title></path>';};
+ const ribbon=(x1,y1,x2,y2,h,from,to,title)=>{if(h<=0)return '';const id=prefix+'-gradient-'+seq++;defs+='<linearGradient id="'+id+'"><stop stop-color="'+from+'"/><stop offset="1" stop-color="'+to+'"/></linearGradient>';return '<path class="flow-link" tabindex="0" aria-label="'+escapeHTML(title)+'" fill="url(#'+id+')" d="M'+x1+','+y1+' C'+((x1+x2)/2)+','+y1+' '+((x1+x2)/2)+','+y2+' '+x2+','+y2+' L'+x2+','+(y2+h)+' C'+((x1+x2)/2)+','+(y2+h)+' '+((x1+x2)/2)+','+(y1+h)+' '+x1+','+(y1+h)+' Z"><title>'+escapeHTML(title)+'</title></path>';};
  const houseX=325,areaX=670,deviceX=995,gridHeight=t.imported*scale,solarHeight=t.solar*scale,injHeight=t.inj*scale;
  const sourceTop=80,gridY=sourceTop,solarY=gridY+gridHeight+65;
  const exportY=Math.max(rootY+rootHeight+55,solarY+t.self*scale),fullHeight=Math.max(height,exportY+injHeight+65);
- links+=ribbon(45,gridY,houseX,rootY,gridHeight,C.hc,C.hc,'Réseau → maison : '+fmt(t.imported,3)+' kWh');
- links+=ribbon(45,solarY,houseX,rootY+gridHeight,t.self*scale,C.sol,C.hc,'Solaire → maison : '+fmt(t.self,3)+' kWh');
- links+=ribbon(45,solarY+t.self*scale,houseX,exportY,injHeight,C.sol,C.inj,'Solaire → réseau : '+fmt(t.inj,3)+' kWh');
+ links+=ribbon(45,gridY,houseX,rootY,gridHeight,C.hc,C.hc,'Réseau → maison : '+fmt(t.imported,digits)+' '+unit+'');
+ links+=ribbon(45,solarY,houseX,rootY+gridHeight,t.self*scale,C.sol,C.hc,'Solaire → maison : '+fmt(t.self,digits)+' '+unit+'');
+ links+=ribbon(45,solarY+t.self*scale,houseX,exportY,injHeight,C.sol,C.inj,'Solaire → réseau : '+fmt(t.inj,digits)+' '+unit+'');
  nodes+=rect(33,gridY,gridHeight,C.hc)+label(52,gridY-28,'Réseau acheté',t.imported);
  nodes+=rect(33,solarY,solarHeight,C.sol)+label(52,solarY-28,'Production solaire',t.solar);
  nodes+=rect(houseX,rootY,rootHeight,C.hc)+label(houseX+20,rootY-28,'Maison',t.house);
  if(t.inj>0)nodes+=rect(houseX,exportY,injHeight,C.inj)+label(houseX+20,exportY+injHeight/2-3,'Injection réseau',t.inj);
  let rootOffset=rootY;
  const colorForDevice=d=>{let hash=0;for(const c of (d.id||d.name))hash=(hash*31+c.charCodeAt(0))>>>0;return palette[hash%palette.length];};
- for(const g of groups){const unknown=g.devices.every(d=>d.untracked),areaColor=unknown?'#87949f':palette[Math.max(0,areas.indexOf(g.name))%palette.length];
- links+=ribbon(houseX+12,rootOffset,areaX,g.y,g.height,C.hc,areaColor,'Maison → '+g.name+' : '+fmt(g.total,3)+' kWh');rootOffset+=g.height;
- nodes+='<g '+(unknown?'':'data-daily-area="'+escapeHTML(g.name)+'" tabindex="0" role="button" aria-label="Afficher '+escapeHTML(g.name)+'"')+'>'+rect(areaX,g.y,g.height,areaColor)+label(areaX-10,g.y+g.height/2-5,g.name,g.total,'end')+'</g>';
- let offset=g.y;for(const d of g.devices){const color=d.untracked?'#87949f':colorForDevice(d);links+=ribbon(areaX+12,offset,deviceX,d.y,d.height,areaColor,color,g.name+' → '+d.name+' : '+fmt(d.watts,3)+' kWh');offset+=d.height;nodes+=rect(deviceX,d.y,d.height,color)+'<g><title>'+escapeHTML(d.name)+'</title><text x="'+(deviceX+22)+'" y="'+(d.y+d.height/2+5)+'">'+escapeHTML(d.name.length>32?d.name.slice(0,31)+'…':d.name)+'</text><text class="flow-value" x="1390" y="'+(d.y+d.height/2+5)+'" text-anchor="end">'+fmt(d.watts,3)+' kWh</text></g>';}
+ for(const g of sourceOnly?[]:groups){const unknown=g.devices.every(d=>d.untracked),areaColor=unknown?'#87949f':palette[Math.max(0,areas.indexOf(g.name))%palette.length];
+ links+=ribbon(houseX+12,rootOffset,areaX,g.y,g.height,C.hc,areaColor,'Maison → '+g.name+' : '+fmt(g.total,digits)+' '+unit+'');rootOffset+=g.height;
+ nodes+='<g '+(unknown?'':areaAttribute+'="'+escapeHTML(g.name)+'" tabindex="0" role="button" aria-label="Afficher '+escapeHTML(g.name)+'"')+'>'+rect(areaX,g.y,g.height,areaColor)+label(areaX-10,g.y+g.height/2-5,g.name,g.total,'end')+'</g>';
+ let offset=g.y;for(const d of g.devices){const color=d.untracked?'#87949f':colorForDevice(d);links+=ribbon(areaX+12,offset,deviceX,d.y,d.height,areaColor,color,g.name+' → '+d.name+' : '+fmt(d.watts,digits)+' '+unit+'');offset+=d.height;nodes+=rect(deviceX,d.y,d.height,color)+'<g><title>'+escapeHTML(d.name)+'</title><text x="'+(deviceX+22)+'" y="'+(d.y+d.height/2+5)+'">'+escapeHTML(d.name.length>32?d.name.slice(0,31)+'…':d.name)+'</text><text class="flow-value" x="1390" y="'+(d.y+d.height/2+5)+'" text-anchor="end">'+fmt(d.watts,digits)+' '+unit+'</text></g>';}
  }
- return '<svg class="source-flow-svg" viewBox="0 0 1410 '+fullHeight+'" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Flux quotidiens du réseau et du solaire vers la maison, les pièces et les appareils"><defs>'+defs+'</defs><text class="flow-value" x="33" y="20">Sources</text><text class="flow-value" x="325" y="20">Destination</text><text class="flow-value" x="660" y="20" text-anchor="end">Pièces</text><text class="flow-value" x="1017" y="20">Appareils</text>'+links+nodes+'</svg>';
+ if(sourceOnly)return '<svg class="source-flow-compact" viewBox="0 0 610 '+Math.max(540,exportY+injHeight+65)+'" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Sources de la puissance maison"><defs>'+defs+'</defs>'+links+nodes+'</svg>';
+ return '<svg class="source-flow-svg" viewBox="0 0 1410 '+fullHeight+'" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Flux du réseau et du solaire vers la maison, les pièces et les appareils en '+unit+'"><defs>'+defs+'</defs><text class="flow-value" x="33" y="20">Sources</text><text class="flow-value" x="325" y="20">Destination</text><text class="flow-value" x="660" y="20" text-anchor="end">Pièces</text><text class="flow-value" x="1017" y="20">Appareils</text>'+links+nodes+'</svg>';
 }
 
 const dayBarsState={today:{step:3600,revision:0},day:{step:3600,revision:0}};

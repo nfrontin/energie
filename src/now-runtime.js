@@ -1,4 +1,4 @@
-let nowPending=false,lastNow=0,nowDevices=[];
+let nowPending=false,lastNow=0,nowDevices=[],nowSourceTotals=null;
 function powerWatts(s){if(!s)return null;const n=Number(s.value?.[1]),unit=s.metric?.unit_of_measurement;if(!Number.isFinite(n)||n<0||!['W','kW'].includes(unit))return null;return n*(unit==='kW'?1000:1);}
 function powerLayout(rows,scaleTotal=null){
  const groups=new Map();for(const d of rows.filter(d=>d.watts>0)){if(!groups.has(d.area))groups.set(d.area,{name:d.area,total:0,devices:[]});const g=groups.get(d.area);g.total+=d.watts;g.devices.push(d);}
@@ -6,24 +6,34 @@ function powerLayout(rows,scaleTotal=null){
  let y=50;for(const g of ordered){g.devices.sort((a,b)=>b.watts-a.watts);const top=y;for(const d of g.devices){d.height=d.watts*scale;d.y=y+Math.max(0,(25-d.height)/2);y+=Math.max(25,d.height)+9;}g.height=g.total*scale;g.y=top+(y-9-top-g.height)/2;y+=24;}
  const height=Math.max(430,y+15),rootHeight=total*scale,rootY=(height-rootHeight)/2;return {groups:ordered,total,scale,height,rootHeight,rootY};
 }
+function nowEnergyBalance(envoy){
+ if(!envoy||!Number.isFinite(envoy.wattsNow)||!Number.isFinite(envoy.gridActiveW)||envoy.wattsNow<0)return null;
+ const solar=envoy.wattsNow,grid=envoy.gridActiveW,house=solar+grid,imported=Math.max(0,grid),inj=Math.max(0,-grid),self=solar-inj;
+ if(house<0||self<0)return null;
+ return {solar,house,imported,inj,self};
+}
 async function loadNow(){
  if(nowPending)return;nowPending=true;
  try{
  const names=POWER_SOURCES.filter(d=>d.power).map(d=>'sensor\\.'+d.power+'_value').join('|');
  const query='last_over_time({db="home_assistant",__name__=~"'+names.replaceAll('\\','\\\\')+'"}[30d])';
- if(!names){nowDevices=[];renderNow();return;}
- const result=await getJSON('/vm/api/v1/query?'+new URLSearchParams({query}));
+ const [result,envoy]=await Promise.all([names?getJSON('/vm/api/v1/query?'+new URLSearchParams({query})):Promise.resolve({data:{result:[]}}),fetchEnvoy()]);
+ nowSourceTotals=nowEnergyBalance(envoy);
  const byId=new Map((result.data.result||[]).map(s=>[s.metric.entity_id,s]));
  nowDevices=POWER_SOURCES.map(s=>({...s,name:DETAIL_DEVICES.find(d=>d.id===s.energy)?.name||s.power,watts:powerWatts(byId.get(s.power))}));
  renderNow();lastNow=Date.now();document.getElementById('now-caption').textContent='Puissances actives · relevées à '+new Date().toLocaleTimeString('fr-FR',{timeZone:HOME_TZ,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · '+nowDevices.filter(d=>d.watts!==null).length+'/'+nowDevices.length+' capteurs disponibles';reportRequest('vue-now',false);reportRequest('now',false);
- }catch(e){nowDevices=[];renderNow();document.getElementById('now-caption').textContent='Puissances indisponibles. Réessayez en sélectionnant Maintenant.';throw e;}finally{nowPending=false;}
+ }catch(e){nowDevices=[];nowSourceTotals=null;renderNow();document.getElementById('now-caption').textContent='Puissances indisponibles. Réessayez en sélectionnant Maintenant.';throw e;}finally{nowPending=false;}
 }
 function renderNow(){
  const area=document.getElementById('now-area').value,rows=nowDevices.filter(d=>!area||d.area===area),known=rows.filter(d=>d.watts!==null),layout=powerLayout(rows.map(d=>({...d}))),leader=known.filter(d=>d.watts>0).sort((a,b)=>b.watts-a.watts)[0];
  document.getElementById('now-total').textContent=fmt(known.length?layout.total:null,0)+' W';document.getElementById('now-count').textContent=known.filter(d=>d.watts>0).length+' / '+rows.length;document.getElementById('now-leader').textContent=leader?leader.name+' · '+fmt(leader.watts,0)+' W':known.length?'Aucun appareil actif':'—';
  document.getElementById('now-rows').innerHTML=[...rows].sort((a,b)=>a.area.localeCompare(b.area,'fr')||(b.watts??-1)-(a.watts??-1)).map(d=>'<tr><th scope="row">'+escapeHTML(d.area)+'</th><td>'+escapeHTML(d.name)+'</td><td>'+fmt(d.watts,1)+' W</td></tr>').join('');
- if(!layout.total){document.getElementById('now-diagram').innerHTML='<p class="vt-sub">'+(known.length?'Aucune puissance positive mesurée pour cette sélection.':'Aucune puissance disponible pour cette sélection.')+'</p>';return;}
- document.getElementById('now-diagram').innerHTML=renderFlowSVG(layout,'W','data-now-area');
+ const model=!area?dailySourceModel(rows,nowSourceTotals):null;
+ const fallback=layout.total?renderFlowSVG(layout,'W','data-now-area'):'<p class="vt-sub">'+(known.length?'Aucune puissance positive mesurée pour cette sélection.':'Aucune puissance disponible pour cette sélection.')+'</p>';
+ const sources=nowSourceTotals?dailySourceModel([],nowSourceTotals):null;
+ document.getElementById('now-source-note').textContent=model?'Le solaire alimente la maison ; le surplus est injecté au réseau. Non réparti : puissance maison non attribuée aux appareils suivis.':sources?(area?'Les sources représentent toute la maison ; les appareils ci-dessous sont filtrés par pièce.':'Sources maison et appareils sont représentés séparément : les relevés des appareils dépassent le total maison (décalage des mesures ou circuits qui se recoupent).'):'Sources solaire et réseau indisponibles : seuls les appareils sont représentés.';
+ document.getElementById('now-diagram').innerHTML=model?renderEnergySourceFlow(model,{unit:'W',areaAttribute:'data-now-area',prefix:'now-source'}):(sources?renderEnergySourceFlow(sources,{unit:'W',prefix:'now-source',sourceOnly:true}):'')+fallback;
+
 }
 function renderFlowSVG(layout,unit,areaAttribute){
  const digits=unit==='kWh'?3:1;
