@@ -91,7 +91,7 @@ def analyse(data,start,end,config):
   output.append(s)
  mileage=data[MILEAGE];a=mileage.get(start);b=mileage.get(end)
  mini=data[MINI_MILEAGE];ma=mini.get(start);mb=mini.get(end)
- return {'missingIntervals':sum(t not in counter or t-300 not in counter for t in range(start+300,end+1,300)),'hasData':any(start<=t<=end for t in counter),'sessions':output,'standbyKwh':standby,'resets':resets,'excludedKwh':unpriced,'historicalTariffEstimated':estimated,'bmwKm':b-a if a is not None and b is not None and b>=a else None,'miniKm':mb-ma if ma is not None and mb is not None and mb>=ma else None,'odometers':{'bmw':b,'mini':mb},'power':[[t,v/1000] for t,v in sorted(power.items()) if max(start,end-86400)<=t<=end]}
+ return {'missingIntervals':sum(t not in counter or t-300 not in counter for t in range(start+300,end+1,300)),'hasData':any(start<=t<=end for t in counter),'sessions':output,'standbyKwh':standby,'resets':resets,'excludedKwh':unpriced,'historicalTariffEstimated':estimated,'bmwKm':b-a if a is not None and b is not None and b>=a else None,'miniKm':mb-ma if ma is not None and mb is not None and mb>=ma else None,'odometers':{'bmw':b,'mini':mb},'power':[[t,power[t]/1000 if t in power else None] for t in range(max(start,end-86400),end+1,300)]}
 
 def summary(month):
  start,end=bounds(month)
