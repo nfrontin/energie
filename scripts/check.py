@@ -5,3 +5,6 @@ subprocess.run([sys.executable,'scripts/build.py'],check=True)
 subprocess.run(['node','--check','dist/app.js'],check=True)
 subprocess.run([sys.executable,'config-sync/test_sync.py'],check=True)
 for test in sorted(Path('tests').glob('check-*.cjs')):subprocess.run(['node',str(test)],check=True)
+
+subprocess.run(['node','--check','mobility/app.js'],check=True)
+subprocess.run([sys.executable,'tests/test_mobility.py'],check=True)

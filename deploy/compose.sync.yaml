@@ -11,8 +11,15 @@ services:
     mem_limit: 128m
     environment:
       VM_URL: ${VM_URL:-http://10.1.2.20:8428}
+      MOBILITY_ENABLED: "1"
     volumes:
       - ${HA_CONFIG:-/volume1/docker/homeassistant/config}/.storage:/ha:ro
-      - ${ENERGIE_ROOT:-/volume1/docker/energie}/config-sync/sync.py:/app/sync.py:ro
+      - ${ENERGIE_ROOT:-/volume1/docker/energie}/config-sync:/app:ro
       - ${ENERGIE_ROOT:-/volume1/docker/energie}/config-sync/state:/state
       - ${ENERGIE_ROOT:-/volume1/docker/energie}/html/config:/output
+
+    networks: [energie]
+networks:
+  energie:
+    external: true
+    name: energie_default

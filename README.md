@@ -4,6 +4,8 @@ Tableau de bord de la maison : électricité, production solaire, eau, gaz et hi
 
 ## Fonctionnalités
 
+- **Mobilité** : sessions de recharge, bilans BMW/Mini, attribution des sessions et saisie persistante des pleins d’essence. Voir [la documentation](docs/mobilite.md).
+
 - **Maintenant** : puissances des appareils et diagramme de flux par pièce.
 - **Détail** : bilan journalier, solaire, achats/injection, estimation des coûts, comparaison à la veille, appareils et diagramme quotidien en kWh.
 - **Aujourd’hui / Jour** : barres verticales par heure (kWh) ou par 5 minutes (puissance moyenne en kW).

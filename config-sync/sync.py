@@ -65,6 +65,9 @@ def sync_once():
     data={**config,'tariffHistory':history};version=hashlib.sha256(json.dumps(data,sort_keys=True).encode()).hexdigest()
     atomic(OUTPUT/'energy-config.json',{'schema':1,'version':version,'syncedAt':now,**data})
 if __name__=='__main__':
+    if os.environ.get('MOBILITY_ENABLED')=='1':
+        import mobility_server
+        mobility_server.start()
     while True:
         try:sync_once();print('Configuration synchronized',flush=True)
         except Exception as e:print('Synchronization failed: '+type(e).__name__+'; previous configuration preserved',flush=True)
