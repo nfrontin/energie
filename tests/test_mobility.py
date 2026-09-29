@@ -12,6 +12,18 @@ class MobilityTests(unittest.TestCase):
   start=1790000100;d={m.COUNTER:{start:0,start+300:1000},m.POWER:{},m.RATE:{},m.MILEAGE:{},m.MINI_MILEAGE:{}}
   r=m.analyse(d,start,start+300,{})
   self.assertIsNone(r['sessions'][0]['cost'])
+ def test_daily_kilometres_missing_reset_partial_and_dst(self):
+  from datetime import datetime,timedelta
+  day=datetime(2026,10,25,tzinfo=m.TZ)
+  a=int(day.timestamp());b=int((day+timedelta(days=1)).timestamp());end=b+3600
+  self.assertEqual(b-a,25*3600)
+  data={m.MILEAGE:{a:1000,b:1123,end:1133},m.MINI_MILEAGE:{a+300:500,b:550,end:550}}
+  result=m.daily_distances(data,a,end)
+  self.assertEqual(result['2026-10-25']['bmw'],123)
+  self.assertIsNone(result['2026-10-25']['mini'])
+  self.assertEqual(result['2026-10-26'],{'bmw':10,'mini':0})
+  data[m.MILEAGE][a+600]=900
+  self.assertIsNone(m.daily_distances(data,a,end)['2026-10-25']['bmw'])
  def test_fuel_validation(self):
   base={'id':'a'*32,'date':'2026-09-01','cost':'56.23','litres':'30.5'}
   self.assertEqual(m.validate_fuel(base)[2],5623)

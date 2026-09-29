@@ -57,6 +57,22 @@ def price_at(config,kind,t):
  source=next((s for s in config.get('sources',[]) if s['id']=='westic1'+kind),{})
  return source.get('price'),True
 
+def daily_distances(data,start,end):
+ """Odometer differences on Paris calendar days; missing/reset days stay unknown."""
+ out={};day=datetime.fromtimestamp(start,TZ).replace(hour=0,minute=0,second=0,microsecond=0)
+ while day.timestamp()<end:
+  next_day=day+timedelta(days=1)
+  a=max(start,int(day.timestamp()));b=min(end,int(next_day.timestamp()))
+  values={}
+  for vehicle,entity in [('bmw',MILEAGE),('mini',MINI_MILEAGE)]:
+   points=data.get(entity,{})
+   readings=[v for t,v in sorted(points.items()) if a<=t<=b]
+   valid=a in points and b in points and not any(y<x for x,y in zip(readings,readings[1:]))
+   values[vehicle]=round(points[b]-points[a],3) if valid else None
+  out[day.strftime('%Y-%m-%d')]=values
+  day=next_day
+ return out
+
 def analyse(data,start,end,config):
  counter=data[COUNTER];power=data[POWER];rate=data[RATE]
  buckets=[];resets=0;unpriced=0;estimated=False;standby=0
@@ -91,7 +107,7 @@ def analyse(data,start,end,config):
   output.append(s)
  mileage=data[MILEAGE];a=mileage.get(start);b=mileage.get(end)
  mini=data[MINI_MILEAGE];ma=mini.get(start);mb=mini.get(end)
- return {'missingIntervals':sum(t not in counter or t-300 not in counter for t in range(start+300,end+1,300)),'hasData':any(start<=t<=end for t in counter),'sessions':output,'standbyKwh':standby,'resets':resets,'excludedKwh':unpriced,'historicalTariffEstimated':estimated,'bmwKm':b-a if a is not None and b is not None and b>=a else None,'miniKm':mb-ma if ma is not None and mb is not None and mb>=ma else None,'odometers':{'bmw':b,'mini':mb},'power':[[t,power[t]/1000 if t in power else None] for t in range(max(start,end-86400),end+1,300)]}
+ return {'dailyKm':daily_distances(data,start,end),'missingIntervals':sum(t not in counter or t-300 not in counter for t in range(start+300,end+1,300)),'hasData':any(start<=t<=end for t in counter),'sessions':output,'standbyKwh':standby,'resets':resets,'excludedKwh':unpriced,'historicalTariffEstimated':estimated,'bmwKm':b-a if a is not None and b is not None and b>=a else None,'miniKm':mb-ma if ma is not None and mb is not None and mb>=ma else None,'odometers':{'bmw':b,'mini':mb},'power':[[t,power[t]/1000 if t in power else None] for t in range(max(start,end-86400),end+1,300)]}
 
 def summary(month):
  start,end=bounds(month)
