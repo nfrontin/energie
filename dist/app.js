@@ -1206,6 +1206,7 @@ function resourceHourBuckets(intervals,day,end){
 }
 function resourceIntervals(points){return points.slice(1).map(([t,v],i)=>({start:+points[i][0],end:+t,delta:+v-Number(points[i][1])}));}
 function renderResourceHours(kind,day,values,label,unit,color,previous=[]){
+ if(kind==='gas'&&typeof renderGasCost==='function')renderGasCost(day,values);
  const start=localMidnight(day),labels=values.map((_,i)=>new Date(start+i*3600000).toLocaleTimeString('fr-FR',{timeZone:HOME_TZ,hour:'2-digit',minute:'2-digit',timeZoneName:'shortOffset'}));
  const prevDay=shiftDay(day,-1),prevStart=localMidnight(prevDay),clock=t=>new Date(t).toLocaleTimeString('fr-FR',{timeZone:HOME_TZ,hour:'2-digit',minute:'2-digit'}),byClock=new Map(previous.map((v,i)=>[clock(prevStart+i*3600000),v]));
  const id='chart-'+kind+'-hours';charts[id]?.destroy();
@@ -1226,6 +1227,7 @@ async function loadGasHours(){
  const picker=document.getElementById('gas-day');picker.max=today;picker.min=shiftDay(today,-29);picker.value=gasHourDay;
  const day=gasHourDay,revision=++gasHourRevision,end=Math.min(Date.now()/1000,localMidnight(shiftDay(day,1))/1000);
  document.getElementById('gas-hours-caption').textContent='Chargement des relevés…';
+ if(typeof renderGasCost==='function')renderGasCost(day,[]);
  try{
  const points=await vmR('last_over_time(sensor.gaz_en_kwh_value{db="home_assistant"}[30d])',dayISO(shiftDay(day,-1)),new Date(end*1000).toISOString(),300);
  if(revision!==gasHourRevision)return;
@@ -1259,6 +1261,29 @@ function tariffMean(key,start,end){const cuts=[start,...tariffHistory.map(h=>Dat
 function sourceCost(source,values,day,end){let total=0;for(let i=0;i<values.length;i++){const start=localMidnight(day)/1000+i*3600,stop=Math.min(start+3600,end);if(stop<=start)continue;if(values[i]===null)return null;const price=tariffMean(source.kind+':'+source.id,start,stop);if(price===null)return null;total+=values[i]*price;}return source.kind==='export'?-total:total;}
 (async()=>{await syncEnergyConfig();const view=location.hash.slice(1);showView(['now','detail','today','day','rolling','month','history'].includes(view)?view:'detail');})();
 setInterval(async()=>{if(!document.hidden&&await syncEnergyConfig()){if(currentResource==='electric')showView(currentView);}},60000);
+
+// Contract-specific TTC rates supplied by the owner; no personal contract data.
+const GAS_CONTRACT={supplier:'Alterna énergie',offer:'Énergie moins chère ensemble 2024',option:'T2',effectiveFrom:'2025-09-01',kwh:0.0875,monthly:27.56};
+function gasDayCost(day,kwh){
+ if(day<GAS_CONTRACT.effectiveFrom)return null;
+ const [year,month]=day.split('-').map(Number),days=new Date(Date.UTC(year,month,0)).getUTCDate();
+ const subscription=GAS_CONTRACT.monthly/days;
+ return {energy:Number.isFinite(kwh)&&kwh>=0?kwh*GAS_CONTRACT.kwh:null,subscription,total:Number.isFinite(kwh)&&kwh>=0?kwh*GAS_CONTRACT.kwh+subscription:null};
+}
+function renderGasCost(day,values){
+ const start=localMidnight(day)/1000,next=localMidnight(shiftDay(day,1))/1000,stop=Math.min(Date.now()/1000,next);
+ const elapsed=Math.max(0,Math.min(values.length,Math.ceil((stop-start)/3600)));
+ const readings=values.slice(0,elapsed),complete=readings.length>0&&readings.every(v=>Number.isFinite(v));
+ const cost=gasDayCost(day,complete?readings.reduce((sum,v)=>sum+v,0):null),euros=v=>fmt(v,2)+' €';
+ document.getElementById('gas-cost-date').textContent='Journée du '+new Date(day+'T12:00:00Z').toLocaleDateString('fr-FR');
+ document.getElementById('gas-energy-cost').textContent=cost?.energy==null?'—':euros(cost.energy);
+ document.getElementById('gas-subscription-cost').textContent=cost?euros(cost.subscription):'—';
+ document.getElementById('gas-total-cost').textContent=cost?.total==null?'—':euros(cost.total);
+ document.getElementById('gas-cost-note').textContent=(day===localDate()?'Consommation à ce stade de la journée ; abonnement compté pour la journée entière. ':'')+'Abonnement réparti sur les jours du mois.'+(!complete?' Relevés incomplets : coût de consommation indisponible.':'')+(!cost?' Aucun tarif renseigné avant le 01/09/2025.':'');
+}
+document.getElementById('gas-rate-kwh').textContent=fmt(GAS_CONTRACT.kwh,4)+' €/kWh TTC';
+document.getElementById('gas-rate-month').textContent=fmt(GAS_CONTRACT.monthly,2)+' €/mois TTC';
+document.getElementById('gas-rate-year').textContent=fmt(GAS_CONTRACT.monthly*12,2)+' €/an à tarif constant';
 
 const themePicker=document.getElementById('energy-theme');themePicker.value=activeTheme;
 themePicker.addEventListener('change',()=>{

@@ -58,3 +58,9 @@ La comparaison avec la veille est une courbe pointillée, alignée sur les heure
 ### Sources dans la vue Maintenant
 
 Le diagramme utilise les puissances actives Envoy en watts : maison = production solaire + puissance nette du réseau. Le surplus est représenté comme injection. Les sources sont affichées en haut du même diagramme que les pièces et appareils lorsque le bilan le permet. Si les appareils dépassent la mesure maison, ou si une pièce est sélectionnée, le bilan global des sources reste visible séparément ; aucune attribution du solaire à un appareil particulier n’est inventée. Une mesure Envoy absente ou incohérente laisse les sources indisponibles. Les capteurs des appareils et Envoy sont relus ensemble au chargement de la vue, puis environ toutes les 30 secondes.
+
+## Tarifs gaz du contrat fourni
+
+La page Gaz utilise les conditions particulières Alterna énergie « Énergie moins chère ensemble 2024 », option T2 : **0,0875 €/kWh TTC** et **27,56 €/mois TTC**, applicables au **1er septembre 2025**. Le contrat individuel plus récent prévaut ici sur la grille générale datée du 1er janvier 2025. Les PDF et les données personnelles du contrat ne sont pas publiés.
+
+Le coût de la journée sélectionnée utilise la somme des tranches horaires couvertes. Si une tranche écoulée manque, le coût énergétique reste indisponible. L’abonnement journalier est le montant mensuel divisé par le nombre de jours calendaires du mois ; pour aujourd’hui, cette part couvre la journée entière tandis que la consommation est partielle. Aucune estimation n’est appliquée avant la date renseignée. L’offre est à prix fixe selon les CGV, non fournies ici ; les éventuelles évolutions ultérieures ne sont pas connues. Ces tarifs sont ceux du document fourni et ne constituent pas une vérification de la facture actuelle. Ils sont définis dans `src/gas-tariffs.js` ; la configuration Home Assistant n’est pas modifiée.

@@ -1,0 +1,12 @@
+const vm=require('node:vm'),fs=require('node:fs'),assert=require('node:assert/strict');
+const nodes={};const context={document:{getElementById:id=>nodes[id]??=( {textContent:''})},fmt:(n,d)=>n.toFixed(d),Date};vm.createContext(context);vm.runInContext(fs.readFileSync('src/gas-tariffs.js','utf8'),context);
+const calc=(d,k)=>vm.runInContext(`gasDayCost(${JSON.stringify(d)},${k})`,context);
+assert.equal(calc('2025-08-31',10),null);
+assert.equal(calc('2025-09-01',100).energy,8.75);
+assert.equal(calc('2026-09-30',0).subscription,27.56/30);
+assert.equal(calc('2026-02-28',10).subscription,27.56/28);
+assert.equal(calc('2028-02-29',10).subscription,27.56/29);
+assert.equal(calc('2026-10-01',10).subscription,27.56/31);
+assert.equal(calc('2026-09-30','null').total,null);
+assert.equal(calc('2026-09-30',-1).energy,null);
+console.log('PASS: contract start, TTC energy, monthly subscription proration and missing readings.');

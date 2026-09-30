@@ -12,6 +12,7 @@ function resourceHourBuckets(intervals,day,end){
 }
 function resourceIntervals(points){return points.slice(1).map(([t,v],i)=>({start:+points[i][0],end:+t,delta:+v-Number(points[i][1])}));}
 function renderResourceHours(kind,day,values,label,unit,color,previous=[]){
+ if(kind==='gas'&&typeof renderGasCost==='function')renderGasCost(day,values);
  const start=localMidnight(day),labels=values.map((_,i)=>new Date(start+i*3600000).toLocaleTimeString('fr-FR',{timeZone:HOME_TZ,hour:'2-digit',minute:'2-digit',timeZoneName:'shortOffset'}));
  const prevDay=shiftDay(day,-1),prevStart=localMidnight(prevDay),clock=t=>new Date(t).toLocaleTimeString('fr-FR',{timeZone:HOME_TZ,hour:'2-digit',minute:'2-digit'}),byClock=new Map(previous.map((v,i)=>[clock(prevStart+i*3600000),v]));
  const id='chart-'+kind+'-hours';charts[id]?.destroy();
@@ -32,6 +33,7 @@ async function loadGasHours(){
  const picker=document.getElementById('gas-day');picker.max=today;picker.min=shiftDay(today,-29);picker.value=gasHourDay;
  const day=gasHourDay,revision=++gasHourRevision,end=Math.min(Date.now()/1000,localMidnight(shiftDay(day,1))/1000);
  document.getElementById('gas-hours-caption').textContent='Chargement des relevés…';
+ if(typeof renderGasCost==='function')renderGasCost(day,[]);
  try{
  const points=await vmR('last_over_time(sensor.gaz_en_kwh_value{db="home_assistant"}[30d])',dayISO(shiftDay(day,-1)),new Date(end*1000).toISOString(),300);
  if(revision!==gasHourRevision)return;

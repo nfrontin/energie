@@ -42,6 +42,7 @@ js=js.replace('  const dHP  = dailyDeltas', '  if(requestedMonth!==curMonth)retu
 js=js.replace("{ hour: '2-digit', minute: '2-digit', second: '2-digit' }", "{timeZone:HOME_TZ,hour:'2-digit',minute:'2-digit',second:'2-digit'}")
 js+='\n'+Path('src/new-runtime.js').read_text()+'\n'+Path('src/detail-config.js').read_text()+'\n'+Path('src/detail-runtime.js').read_text()+'\nconst POWER_SOURCES='+Path('src/power-sources.json').read_text()+';\n'+Path('src/now-runtime.js').read_text()+'\n'+Path('src/daily-flow-runtime.js').read_text()+'\n'+Path('src/daily-source-flow.js').read_text()+'\n'+Path('src/day-bars.js').read_text()+'\n'+Path('src/resource-hours.js').read_text()+'\n'+Path('src/dynamic-config.js').read_text()
 js=js.replace('async function loadToday() {','async function legacyLoadToday() {').replace('async function loadDay() {','async function legacyLoadDay() {')
+js+='\n'+Path('src/gas-tariffs.js').read_text()
 js=Path('src/themes.js').read_text()+'\n'+js+'\n'+Path('src/theme-controls.js').read_text()
 js=js.replace("const C = {hp:'#d69b4d',hc:'#5b7f92',gas:'#b47453',sol:'#668b52',inj:'#418576',base:'#847199'};","const C = {...ENERGY_THEMES[activeTheme].colors};")
 favicon='<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,'+quote(Path('src/favicon.svg').read_text(),safe='')+'">'
