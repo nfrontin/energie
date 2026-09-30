@@ -25,6 +25,28 @@ function detailDerived(hp,hc,solar,inj){
  return {imported,self,house:detailCombine(imported,self,(a,b)=>a+b)};
 }
 function detailTotalComplete(a,expected){return a.slice(0,expected).every(v=>v!==null)?detailSum(a):null;}
+// Allocate hourly grid purchases across house consumption; solar self-use has no purchase cost.
+function deviceEstimatedCost(values,house,imports,day,end){
+ let cost=0;
+ for(let i=0;i<values.length;i++){
+  const start=localMidnight(day)/1000+i*3600,stop=Math.min(start+3600,end);
+  if(stop<=start)continue;
+  const energy=values[i];
+  if(!Number.isFinite(energy)||energy<0)return null;
+  if(energy===0)continue;
+  if(!Number.isFinite(house[i])||house[i]<=0||!imports.length)return null;
+  let purchased=0;
+  for(const item of imports){
+   const kwh=item.values[i];if(!Number.isFinite(kwh)||kwh<0)return null;
+   if(kwh===0)continue;
+   const price=tariffMean('import:'+item.source.id,start,stop);
+   if(!Number.isFinite(price)||price<0)return null;
+   purchased+=kwh*price;
+  }
+  cost+=energy*purchased/house[i];
+ }
+ return cost;
+}
 async function loadDetail(){
  clearDailyFlow();
  const revision=++detailRevision,day=detailDay,prev=shiftDay(day,-1),end=Math.min(Date.now()/1000,localMidnight(shiftDay(day,1))/1000),start=localMidnight(prev)/1000;
@@ -45,6 +67,8 @@ async function loadDetail(){
  const current=make(day),previous=make(prev),expected=Math.ceil((end-localMidnight(day)/1000)/3600),total=a=>detailTotalComplete(a,expected);
  const totals=Object.fromEntries(Object.entries(current).map(([k,a])=>[k,total(a)]));
  detailRows=DETAIL_DEVICES.map(d=>({...d,values:read(d.id,day),previousValues:read(d.id,prev)})).map(d=>({...d,total:total(d.values),previous:detailTotalComplete(d.previousValues,d.previousValues.length)})).sort((a,b)=>(b.total??-1)-(a.total??-1));
+ const imports=energySourceConfig.filter(s=>s.kind==='import').map(source=>({source,values:read(source.id,day)}));
+ detailRows=detailRows.map(d=>({...d,cost:d.total===null?null:deviceEstimatedCost(d.values,current.house,imports,day,end)}));
  const costs=energySourceConfig.filter(s=>s.kind!=='solar').map(source=>({source,kwh:total(read(source.id,day)),cost:sourceCost(source,read(source.id,day),day,end)}));
  renderDetail(current,previous,totals,day,prev,end,costs);renderDailyFlow();reportRequest('detail',false);reportRequest('vue-detail',false);lastDetail=Date.now();
  }catch(e){if(revision===detailRevision){document.getElementById('daily-flow-diagram').textContent='Données indisponibles pour cette journée.';document.getElementById('detail-caption').textContent='Relevés indisponibles pour cette journée. Réessayez en sélectionnant la date.';document.getElementById('detail-kpis').textContent='Données indisponibles';for(const id of ['chart-detail','chart-detail-solar','chart-detail-devices']){charts[id]?.destroy();delete charts[id];}for(const id of ['detail-flows','detail-ratios','detail-totals','detail-device-rows'])document.getElementById(id).textContent='—';}throw e;}
@@ -82,7 +106,7 @@ function renderDetailDevices(){
  const search=document.getElementById('detail-search').value.toLocaleLowerCase('fr'),known=detailRows.filter(d=>d.total!==null),sum=known.reduce((s,d)=>s+d.total,0);
  document.getElementById('detail-device-caption').textContent=known.length+' / '+DETAIL_DEVICES.length+' appareils avec un relevé exploitable · comparaison à la veille complète';
  const rows=detailRows.filter(d=>d.name.toLocaleLowerCase('fr').includes(search));
- document.getElementById('detail-device-rows').innerHTML=rows.map(d=>{const delta=d.total!==null&&d.previous!==null?d.total-d.previous:null,share=d.total!==null&&sum>0?100*d.total/sum:null;return '<tr><th scope="row">'+escapeHTML(d.name)+'</th><td>'+fmt(d.total,3)+' kWh</td><td>'+fmt(d.previous,3)+' kWh</td><td>'+(delta>0?'+':'')+fmt(delta,3)+' kWh</td><td>'+fmt(share,1)+' %<div class="detail-bar"><span style="width:'+(share??0)+'%"></span></div></td></tr>';}).join('')||'<tr><td colspan="5">Aucun appareil trouvé.</td></tr>';
+ document.getElementById('detail-device-rows').innerHTML=rows.map(d=>{const delta=d.total!==null&&d.previous!==null?d.total-d.previous:null,share=d.total!==null&&sum>0?100*d.total/sum:null;return '<tr><th scope="row">'+escapeHTML(d.name)+'</th><td>'+fmt(d.total,3)+' kWh</td><td>'+fmt(d.cost,2)+(d.cost===null?'':' €')+'</td><td>'+fmt(d.previous,3)+' kWh</td><td>'+(delta>0?'+':'')+fmt(delta,3)+' kWh</td><td>'+fmt(share,1)+' %<div class="detail-bar"><span style="width:'+(share??0)+'%"></span></div></td></tr>';}).join('')||'<tr><td colspan="6">Aucun appareil trouvé.</td></tr>';
 }
 function changeDetailDay(day){if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||day>localDate())return;detailDay=day;showView('detail');}
 document.getElementById('detail-date').addEventListener('change',e=>changeDetailDay(e.target.value));

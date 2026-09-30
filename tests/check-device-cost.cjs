@@ -1,0 +1,17 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
+const src=fs.readFileSync('src/detail-runtime.js','utf8');const start=Date.parse('2026-09-30T00:00:00+02:00')/1000;
+const ctx=vm.createContext({Number,Math,localMidnight:()=>start*1000,tariffMean:key=>({'import:hp':.1807,'import:hc':.1387})[key]??null});
+vm.runInContext(src.slice(src.indexOf('function deviceEstimatedCost'),src.indexOf('async function loadDetail')),ctx);
+const calc=(values,house,imports,end=start+values.length*3600)=>ctx.deviceEstimatedCost(values,house,imports,'2026-09-30',end);
+const imports=[{source:{id:'hp'},values:[2,0]},{source:{id:'hc'},values:[0,4]}];
+assert(Math.abs(calc([1,2],[2,4],imports)-(.1807+2*.1387))<1e-10);
+assert(Math.abs(calc([1,2],[4,8],imports)-(.1807+2*.1387)/2)<1e-10);
+assert.equal(calc([1],[2],[{source:{id:'hp'},values:[0]}]),0);
+assert.equal(calc([null],[2],imports),null);
+assert.equal(calc([1],[null],imports),null);
+assert.equal(calc([1],[0],imports),null);
+assert.equal(calc([1],[2],[{source:{id:'unknown'},values:[1]}]),null);
+assert.equal(calc([0],[null],imports),0);
+assert.equal(calc([1,null],[2,null],imports,start+3600),.1807);
+for(const hours of [23,25])assert(Math.abs(calc(Array(hours).fill(1),Array(hours).fill(2),[{source:{id:'hc'},values:Array(hours).fill(2)}])-hours*.1387)<1e-10);
+console.log('PASS: device HP/HC costs, proportional solar allocation, unknown data, zero consumption, future and DST hours.');
