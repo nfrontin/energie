@@ -54,6 +54,7 @@ def price_at(config,kind,t):
  history=config.get('tariffHistory',[])
  records=[h for h in history if datetime.fromisoformat(h['observedAt'].replace('Z','+00:00')).timestamp()<=t]
  if records:return records[-1]['prices'].get(key),False
+ if history:return history[0]['prices'].get(key),True
  source=next((s for s in config.get('sources',[]) if s['id']=='westic1'+kind),{})
  return source.get('price'),True
 

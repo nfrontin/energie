@@ -1,0 +1,13 @@
+{
+  "supplier": "Octopus Energy",
+  "offer": "Énergie Moins Chère Ensemble 2025",
+  "contractStart": "2025-11-28",
+  "effectiveFrom": "2026-09-30T00:00:00+02:00",
+  "monthly": 53.79,
+  "kva": 36,
+  "prices": {
+    "import:westic1hp": 0.1807,
+    "import:westic1hc": 0.1387
+  },
+  "offPeak": "00 h 04–05 h 34 · 14 h 34–17 h 04"
+}

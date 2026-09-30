@@ -12,6 +12,16 @@ class SyncTests(unittest.TestCase):
   m.sync_once();a=json.loads((m.OUTPUT/'energy-config.json').read_text());self.assertEqual(a['devices'][0]['area'],'Cuisine');self.assertEqual(a['devices'][0]['name'],'Prise');self.assertEqual(len(a['sources']),3)
   self.conf['device_consumption'].append({'stat_consumption':'sensor.new_socket','name':'Nouvelle prise'});self.conf['energy_sources'][0]['number_energy_price']=0.3;self.write('energy',self.conf);m.sync_once();b=json.loads((m.OUTPUT/'energy-config.json').read_text());self.assertEqual(len(b['devices']),2);self.assertIsNone(b['devices'][1]['power']);self.assertEqual(len(b['tariffHistory']),2);self.assertEqual(b['tariffHistory'][0]['prices']['import:import'],0.2);self.assertEqual(b['tariffHistory'][1]['prices']['import:import'],0.3)
   m.sync_once();c=json.loads((m.OUTPUT/'energy-config.json').read_text());self.assertEqual(c['version'],b['version']);self.assertEqual(len(c['tariffHistory']),2);self.assertNotIn('device_id',str(c));self.assertNotIn('core.entity_registry',str(c))
+ def test_contract_effective_date_and_history(self):
+  config={'sources':[{'id':'westic1hp','kind':'import','price':.1727},{'id':'westic1hc','kind':'import','price':.1376},{'id':'westic1inj','kind':'export','price':.1}]}
+  history=[{'observedAt':'2026-09-22T00:00:00+00:00','prices':{'import:westic1hp':.1727,'import:westic1hc':.1376,'export:westic1inj':.1}}]
+  m.apply_electricity_contract(config,history,'2026-09-29T21:59:59+00:00')
+  self.assertEqual(len(history),1);self.assertEqual(config['sources'][0]['price'],.1727)
+  m.apply_electricity_contract(config,history,'2026-09-29T22:00:00+00:00')
+  self.assertEqual(len(history),2);self.assertEqual(history[0]['prices']['import:westic1hp'],.1727)
+  self.assertEqual(history[1]['prices']['import:westic1hp'],.1807);self.assertEqual(history[1]['prices']['import:westic1hc'],.1387)
+  self.assertEqual(history[1]['prices']['export:westic1inj'],.1)
+  m.apply_electricity_contract(config,history,'2026-10-01T00:00:00+00:00');self.assertEqual(len(history),2)
  def test_failed_read_preserves_last_good_file(self):
   m.sync_once();p=m.OUTPUT/'energy-config.json';before=p.read_bytes();(m.INPUT/'energy').write_text('{broken')
   with self.assertRaises(json.JSONDecodeError):m.sync_once()

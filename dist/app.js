@@ -1003,6 +1003,7 @@ function renderDetail(a,p,t,day,prev,end,costs){
  const partial=day===localDate();
  document.getElementById('detail-caption').textContent=new Date(day+'T12:00:00Z').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+(partial?' · en cours, jusqu’à '+new Date(end*1000).toLocaleTimeString('fr-FR',{timeZone:HOME_TZ,hour:'2-digit',minute:'2-digit'}):' · journée complète');
  const cost=costs.length&&costs.every(c=>c.cost!==null)?costs.reduce((sum,c)=>sum+c.cost,0):null;
+ const subscription=electricitySubscription(day),withSubscription=cost!==null&&subscription!==null?cost+subscription:null;
  const hpLabel=energySourceConfig.filter(s=>s.kind==='import'&&s.id!=='westic1hc').map(s=>s.name).join(' + ')||'Réseau';
  document.getElementById('detail-kpis').innerHTML=[['Maison',t.house,'kWh','Électricité consommée'],['Solaire',t.solar,'kWh','Production de la journée'],['Réseau acheté',t.imported,'kWh','Tous les compteurs d’achat'],['Coût net estimé',cost,'€','Achats − injection · hors abonnement']].map(([label,v,unit,note])=>'<div class="vt-stat"><div class="vt-stat-top">'+label+'</div><div class="vt-number">'+numberHTML(v,unit,2)+'</div><div class="vt-sub">'+note+'</div></div>').join('');
  const labels=a.hp.map((_,i)=>new Date(localMidnight(day)+i*3600000).toLocaleTimeString('fr-FR',{timeZone:HOME_TZ,hour:'2-digit',minute:'2-digit'}));
@@ -1015,9 +1016,9 @@ function renderDetail(a,p,t,day,prev,end,costs){
  detailChart('chart-detail-solar',labels,[bar('Production',a.solar,C.sol),line('Production · veille',aligned(p.solar))]);
  document.getElementById('detail-flows').innerHTML=[['solar','Solaire → maison',t.self],['','Réseau → maison',t.imported],['export','Solaire → réseau',t.inj]].map(([cls,label,v])=>'<div class="detail-flow-row '+cls+'"><span>'+label+'</span><strong>'+fmt(v,2)+' <small>kWh</small></strong></div>').join('');
  document.getElementById('detail-ratios').innerHTML=[['Solaire autoconsommé',t.self,t.solar],['Autonomie de la maison',t.self,t.house]].map(([label,n,d])=>{const v=n!==null&&d>0?Math.min(100,100*n/d):null;return '<div class="detail-ratio"><div><span>'+label+'</span><strong>'+fmt(v,0)+' %</strong></div><div class="detail-bar"><span style="width:'+(v??0)+'%"></span></div></div>';}).join('');
- document.getElementById('detail-totals').innerHTML=[...costs.map(c=>[c.source.name,c.kwh,c.cost]),['Production solaire',t.solar,null],['Solaire consommé',t.self,null],['Bilan net réseau',t.imported!==null&&t.inj!==null?t.imported-t.inj:null,cost]].map(([n,v,c])=>'<tr><th scope="row">'+escapeHTML(n)+'</th><td>'+fmt(v,2)+'</td><td>'+fmt(c,2)+(c===null?'':' €')+'</td></tr>').join('');
+ document.getElementById('detail-totals').innerHTML=[...costs.map(c=>[c.source.name,c.kwh,c.cost]),['Production solaire',t.solar,null],['Solaire consommé',t.self,null],['Bilan net réseau',t.imported!==null&&t.inj!==null?t.imported-t.inj:null,cost],['Abonnement TTC · journée',null,subscription],['Total net avec abonnement',null,withSubscription]].map(([n,v,c])=>'<tr><th scope="row">'+escapeHTML(n)+'</th><td>'+fmt(v,2)+'</td><td>'+fmt(c,2)+(c===null?'':' €')+'</td></tr>').join('');
  const first=tariffHistory.length?Date.parse(tariffHistory[0].observedAt)/1000:Infinity;
- document.getElementById('detail-prices').textContent='Tarifs synchronisés : '+energySourceConfig.filter(s=>s.kind!=='solar').map(s=>s.name+' '+(s.price===null?'non renseigné':fmt(s.price,4)+' €/kWh')).join(' · ')+'. Hors abonnement. '+(localMidnight(day)/1000<first?'Tarifs historiques inconnus avant le '+(Number.isFinite(first)?new Date(first*1000).toLocaleDateString('fr-FR'):'début du suivi')+' : premier tarif connu appliqué.':'Changements de tarifs pris en compte depuis leur observation.');
+ document.getElementById('detail-prices').textContent='Tarifs synchronisés : '+energySourceConfig.filter(s=>s.kind!=='solar').map(s=>s.name+' '+(s.price===null?'non renseigné':fmt(s.price,4)+' €/kWh')).join(' · ')+'. Abonnement journalier au prorata des jours du mois, journée entière même en cours ; disponible à partir du 30/09/2026. '+(localMidnight(day)/1000<first?'Tarifs historiques inconnus avant le '+(Number.isFinite(first)?new Date(first*1000).toLocaleDateString('fr-FR'):'début du suivi')+' : premier tarif connu appliqué.':'Changements de tarifs pris en compte depuis leur observation.');
  const top=detailRows.filter(d=>d.total!==null).slice(0,6),rest=detailRows.filter(d=>d.total!==null).slice(6);
  const sets=top.map((d,i)=>bar(d.name,d.values,detailPalette[i]));if(rest.length)sets.push(bar('Autres appareils suivis',labels.map((_,h)=>{const vals=rest.map(d=>d.values[h]);return vals.some(v=>v===null)?null:vals.reduce((s,v)=>s+v,0);}),detailPalette[6]));
  detailChart('chart-detail-devices',labels,sets);renderDetailDevices();
@@ -1239,7 +1240,7 @@ document.getElementById('gas-day').addEventListener('change',e=>{if(e.target.val
 
 for(const kind of ['water','gas'])document.getElementById(kind+'-hours-compare').addEventListener('change',e=>{const chart=charts['chart-'+kind+'-hours'];if(chart){chart.setDatasetVisibility(1,e.target.checked);chart.update();}});
 
-let energySourceConfig=[{id:'westic1hp',kind:'import',name:'Heures pleines',price:0.1727},{id:'westic1hc',kind:'import',name:'Heures creuses',price:0.1376},{id:'westic1inj',kind:'export',name:'Injection',price:0.1},{id:'energy_production_today_filtre',kind:'solar',name:'Solaire',price:null}],tariffHistory=[],configVersion='',configPending=false;
+let energySourceConfig=[{id:'westic1hp',kind:'import',name:'Heures pleines',price:0.1727},{id:'westic1hc',kind:'import',name:'Heures creuses',price:0.1376},{id:'westic1inj',kind:'export',name:'Injection',price:0.1},{id:'energy_production_today_filtre',kind:'solar',name:'Solaire',price:null}],tariffHistory=[],configVersion='',configPending=false,electricityContract=null;
 function updateAreaOptions(){
  for(const id of ['now-area','daily-flow-area']){const el=document.getElementById(id),selected=el.value;el.innerHTML='<option value="">Toutes les pièces</option>';for(const area of [...new Set(POWER_SOURCES.map(d=>d.area))].sort((a,b)=>a.localeCompare(b,'fr'))){const o=document.createElement('option');o.value=area;o.textContent=area;el.append(o);}if([...el.options].some(o=>o.value===selected))el.value=selected;}
 }
@@ -1251,7 +1252,7 @@ async function syncEnergyConfig(){
   const validId=x=>typeof x==='string'&&/^[a-zA-Z0-9_]+$/.test(x);
   if(config.devices.some(d=>!validId(d.id)||typeof d.name!=='string'||typeof d.area!=='string'||d.power!==null&&!validId(d.power))||config.sources.some(s=>!validId(s.id)||!['import','export','solar'].includes(s.kind)))throw Error('format');
   const changed=configVersion!==config.version;
-  if(changed){DETAIL_DEVICES.splice(0,DETAIL_DEVICES.length,...config.devices.map(d=>({id:d.id,name:d.name})));POWER_SOURCES.splice(0,POWER_SOURCES.length,...config.devices.map(d=>({energy:d.id,power:d.power,area:d.area})));energySourceConfig=config.sources;tariffHistory=config.tariffHistory||[];configVersion=config.version;updateAreaOptions();}
+  if(changed){DETAIL_DEVICES.splice(0,DETAIL_DEVICES.length,...config.devices.map(d=>({id:d.id,name:d.name})));POWER_SOURCES.splice(0,POWER_SOURCES.length,...config.devices.map(d=>({energy:d.id,power:d.power,area:d.area})));energySourceConfig=config.sources;electricityContract=config.electricityContract||null;if(typeof renderElectricityContract==='function')renderElectricityContract();tariffHistory=config.tariffHistory||[];configVersion=config.version;updateAreaOptions();}
   const stale=Date.now()-Date.parse(config.syncedAt)>180000;
   document.getElementById('energy-config-status').textContent=stale?'Configuration Home Assistant ancienne : dernière synchronisation '+new Date(config.syncedAt).toLocaleString('fr-FR'):'Configuration synchronisée avec Home Assistant · '+config.devices.length+' appareils';return changed;
  }catch{document.getElementById('energy-config-status').textContent='Configuration Home Assistant inaccessible · dernière configuration connue utilisée';return false;}finally{configPending=false;}
@@ -1284,6 +1285,18 @@ function renderGasCost(day,values){
 document.getElementById('gas-rate-kwh').textContent=fmt(GAS_CONTRACT.kwh,4)+' €/kWh TTC';
 document.getElementById('gas-rate-month').textContent=fmt(GAS_CONTRACT.monthly,2)+' €/mois TTC';
 document.getElementById('gas-rate-year').textContent=fmt(GAS_CONTRACT.monthly*12,2)+' €/an à tarif constant';
+
+function electricitySubscription(day){
+ const c=electricityContract;
+ if(!c||day<c.effectiveFrom.slice(0,10))return null;
+ const [year,month]=day.split('-').map(Number);
+ return c.monthly/new Date(Date.UTC(year,month,0)).getUTCDate();
+}
+function renderElectricityContract(){
+ const c=electricityContract,node=document.getElementById('electricity-contract');
+ if(!node)return;node.hidden=!c;if(!c)return;
+ node.innerHTML='<h2 class="panel-title">Votre contrat électricité</h2><p class="vt-sub">'+escapeHTML(c.supplier+' · '+c.offer)+' · '+c.kva+' kVA · HP / HC</p><div class="detail-kpis">'+[['Heures pleines',c.prices['import:westic1hp'],'€/kWh',4],['Heures creuses',c.prices['import:westic1hc'],'€/kWh',4],['Abonnement',c.monthly,'€/mois',2]].map(([label,v,unit,d])=>'<div class="vt-stat"><div class="vt-stat-top">'+label+' TTC</div><div class="vt-number">'+numberHTML(v,unit,d)+'</div></div>').join('')+'</div><p class="vt-caption">Heures creuses : '+escapeHTML(c.offPeak)+' (heure de Paris).<br>Contrat depuis le 28 novembre 2025 · facturation mensuelle. Grille TTC applicable au 30 septembre 2026 ; les tarifs antérieurs restent ceux du suivi.</p>';
+}
 
 const themePicker=document.getElementById('energy-theme');themePicker.value=activeTheme;
 themePicker.addEventListener('change',()=>{

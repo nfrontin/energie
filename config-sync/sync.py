@@ -56,12 +56,33 @@ def build_config():
     return {'devices':list({d['id']:d for d in out}.values()),'sources':list({(s['kind'],s['id']):s for s in sources}.values())}
 def atomic(path,data):
     tmp=path.with_suffix('.tmp');tmp.write_text(json.dumps(data,ensure_ascii=False,allow_nan=False));tmp.chmod(0o644);os.replace(tmp,path)
+def apply_electricity_contract(config,history,now):
+    contract=json.loads(Path(__file__).with_name('electricity-contract.json').read_text())
+    config['electricityContract']=contract
+    effective=contract['effectiveFrom']
+    if datetime.fromisoformat(now)<datetime.fromisoformat(effective):return
+    applicable={k:v for k,v in contract['prices'].items() if any(s['kind']+':'+s['id']==k for s in config['sources'])}
+    if not applicable:return
+    # Keep the original observations before the documented effective date.
+    if not any(h.get('contractEffectiveFrom')==effective for h in history):
+        before=[h for h in history if datetime.fromisoformat(h['observedAt'])<=datetime.fromisoformat(effective)]
+        prices=dict(before[-1]['prices'] if before else {s['kind']+':'+s['id']:s['price'] for s in config['sources'] if s['kind']!='solar'})
+        history.append({'observedAt':effective,'prices':{**prices,**applicable},'contractEffectiveFrom':effective})
+    for h in history:
+        if datetime.fromisoformat(h['observedAt'])>=datetime.fromisoformat(effective):h['prices'].update(applicable)
+    history.sort(key=lambda h:datetime.fromisoformat(h['observedAt']))
+    for source in config['sources']:
+        key=source['kind']+':'+source['id']
+        if key in applicable:source['price']=applicable[key]
+
 def sync_once():
     config=build_config();now=datetime.now(timezone.utc).isoformat();STATE.mkdir(parents=True,exist_ok=True);OUTPUT.mkdir(parents=True,exist_ok=True)
     p=STATE/'tariffs.json';history=json.loads(p.read_text()) if p.exists() else []
+    apply_electricity_contract(config,history,now)
     prices={s['kind']+':'+s['id']:s['price'] for s in config['sources'] if s['kind']!='solar'}
     if not history or history[-1]['prices']!=prices:
         history.append({'observedAt':now,'prices':prices});atomic(p,history)
+    atomic(p,history)
     data={**config,'tariffHistory':history};version=hashlib.sha256(json.dumps(data,sort_keys=True).encode()).hexdigest()
     atomic(OUTPUT/'energy-config.json',{'schema':1,'version':version,'syncedAt':now,**data})
 if __name__=='__main__':
