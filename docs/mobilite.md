@@ -40,3 +40,5 @@ location ^~ /mobility-api/ {
 ```
 
 Pour restaurer, remettre le dossier `energie` de l’archive, y compris `config-sync/state`, puis recréer les conteneurs avec leurs montages et réseau. Aucun conteneur supplémentaire n’est ajouté. Ne pas effacer la base lors d’une mise à jour.
+
+Les indicateurs en tête de page affichent aussi les kilomètres parcourus sur le mois sélectionné, séparément pour le BMW et la Mini. Ils utilisent les mêmes distances que les fiches véhicules ; un historique insuffisant affiche un tiret, jamais un zéro de remplacement. La grille présente six indicateurs sur trois colonnes, puis deux sur petit écran.
